@@ -1,0 +1,95 @@
+name: Outreach autopilot
+
+on:
+  schedule:
+    # Each run only emails the countries where it is a working day and 08:00 to 17:00 local time (safety.py),
+    # so the times below are picked to reach each region in its morning or early afternoon.
+    # Days run Sunday to Friday (0-5) where Gulf countries with a Sunday to Thursday week are involved; the code
+    # skips any country whose weekend it is.
+    # Odd minutes on purpose: GitHub drops many scheduled runs at :00 and :30, when everyone's crons fire.
+    - cron: "7 6 * * 0-5"    # WhatsApp: Gulf 09:07-10:07, Singapore and Malaysia 14:07
+    - cron: "41 10 * * 0-5"  # WhatsApp: Gulf 13:41-14:41
+    - cron: "7 8 * * 0-5"    # 3D rendering: Gulf 11:07-12:07, Singapore and Malaysia 16:07
+    - cron: "7 20 * * 1-5"   # 3D rendering: US and Canada 15:07 Eastern, New Zealand 08:07
+    - cron: "37 23 * * 0-4"  # 3D rendering: Australia 09:37, New Zealand 11:37 (their Monday to Friday)
+    - cron: "7 14 * * 1-5"   # Receptionist: US and Canada 09:07 Eastern
+    - cron: "41 18 * * 1-5"  # Receptionist: US and Canada 13:41 Eastern
+    - cron: "7 22 * * 0-4"   # Receptionist: Australia 08:07, New Zealand 10:07 (their Monday to Friday)
+  workflow_dispatch:
+    inputs:
+      service:
+        description: "Which service to run"
+        type: choice
+        options: [whatsapp_api, receptionist, render_3d]
+        default: whatsapp_api
+      dry_run:
+        description: "Show the plan only, do nothing"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: outreach-data
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      BUSINESS_NAME: ${{ secrets.BUSINESS_NAME }}
+      POSTAL_ADDRESS: ${{ secrets.POSTAL_ADDRESS }}
+      SENDER_NAME: ${{ secrets.SENDER_NAME }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      DB_PASSPHRASE: ${{ secrets.DB_PASSPHRASE }}
+      MILLION_VERIFIER_API_KEY: ${{ secrets.MILLION_VERIFIER_API_KEY }}
+      MAILBOX_MAP_JSON: ${{ secrets.MAILBOX_MAP_JSON }}
+      ACCOUNT_WHATSAPP_JSON: ${{ secrets.ACCOUNT_WHATSAPP_JSON }}
+      ACCOUNT_RECEPTIONIST_JSON: ${{ secrets.ACCOUNT_RECEPTIONIST_JSON }}
+      ACCOUNT_BOOKS_JSON: ${{ secrets.ACCOUNT_BOOKS_JSON }}
+      SCOUT_DAILY_CAP: ${{ vars.SCOUT_DAILY_CAP || '25' }}
+      OUTREACH_PAUSED: ${{ vars.OUTREACH_PAUSED || 'false' }}
+      AP_SCOUT_MAX: ${{ vars.AP_SCOUT_MAX || '20' }}
+      AP_SEND_LIMIT: ${{ vars.AP_SEND_LIMIT || '8' }}
+      AP_FOLLOWUP_LIMIT: ${{ vars.AP_FOLLOWUP_LIMIT || '4' }}
+      DEMO_LINK: ${{ vars.DEMO_LINK }}
+      DATA_REMOTE: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install packages
+        run: pip install -r requirements.txt
+      - name: Write mailbox files from secrets
+        run: |
+          printf '%s' "$MAILBOX_MAP_JSON" > mailbox_map.json
+          python autopilot.py --prepare
+      - name: Restore database
+        run: bash ci/data_sync.sh restore
+      - name: Pick service
+        id: pick
+        run: |
+          s="${{ github.event.inputs.service }}"
+          if [ -z "$s" ]; then
+            case "${{ github.event.schedule }}" in
+              "7 14 * * 1-5"|"41 18 * * 1-5"|"7 22 * * 0-4") s=receptionist ;;
+              "7 8 * * 0-5"|"7 20 * * 1-5"|"37 23 * * 0-4") s=render_3d ;;
+              *) s=whatsapp_api ;;
+            esac
+          fi
+          echo "Service for this run: $s"
+          echo "service=$s" >> "$GITHUB_OUTPUT"
+      - name: Run autopilot
+        run: >
+          python autopilot.py
+          --service ${{ steps.pick.outputs.service }}
+          --scout-max 0
+          ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+      - name: Save database
+        if: always()
+        run: bash ci/data_sync.sh save

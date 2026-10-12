@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akdam Studios | Hollywood Book Trailers, 3D Covers & Author Growth</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #060913;
+            --bg-surface: #0c1222;
+            --bg-card: #111a30;
+            --bg-card-hover: #182444;
+            --brand-blue: #2563eb;
+            --brand-blue-glow: rgba(37, 99, 235, 0.4);
+            --brand-cyan: #38bdf8;
+            --accent-gold: #f59e0b;
+            --blue-gradient: linear-gradient(135deg, #38bdf8 0%, #2563eb 50%, #1d4ed8 100%);
+            --gold-gradient: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-blue: rgba(56, 189, 248, 0.3);
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --radius-full: 9999px;
+            --shadow-card: 0 10px 30px -10px rgba(0,0,0,0.6);
+            --shadow-glow: 0 0 45px rgba(37, 99, 235, 0.25);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* NAVIGATION */
+        nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 1000;
+            background: rgba(6, 9, 19, 0.88);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 1rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+        .brand-logo-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: var(--radius-full);
+            background: var(--blue-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px var(--brand-blue-glow);
+            font-weight: 900;
+            color: #ffffff;
+            font-size: 1.1rem;
+        }
+        .nav-brand-text {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+        }
+        .nav-brand-text span {
+            background: var(--blue-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--brand-cyan); }
+        .nav-cta {
+            background: var(--blue-gradient);
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.9rem;
+            padding: 0.65rem 1.4rem;
+            border-radius: var(--radius-full);
+            text-decoration: none;
+            box-shadow: 0 4px 20px var(--brand-blue-glow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 28px rgba(56, 189, 248, 0.5);
+        }
+
+        /* HERO SECTION */
+        .hero {
+            padding: 9.5rem 1.5rem 5.5rem 1.5rem;
+            text-align: center;
+            position: relative;
+            background: radial-gradient(circle at 50% 15%, rgba(37, 99, 235, 0.18) 0%, transparent 65%);
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(37, 99, 235, 0.12);
+            border: 1px solid var(--border-blue);
+            padding: 0.45rem 1.1rem;
+            border-radius: var(--radius-full);
+            color: var(--brand-cyan);
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 1.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .hero h1 {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(2.4rem, 5.5vw, 4.2rem);
+            font-weight: 900;
+            line-height: 1.15;
+            max-width: 950px;
+            margin: 0 auto 1.5rem auto;
+            color: #ffffff;
+        }
+        .hero h1 span {
+            background: var(--blue-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero p.lead {
+            font-size: clamp(1.05rem, 2vw, 1.25rem);
+            color: var(--text-secondary);
+            max-width: 720px;
+            margin: 0 auto 2.5rem auto;
+            font-weight: 400;
+        }
+        .hero-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+        }
+        .btn-primary {
+            background: var(--blue-gradient);
+            color: #ffffff;
+            font-weight: 700;
+            padding: 1rem 2.4rem;
+            border-radius: var(--radius-full);
+            text-decoration: none;
+            font-size: 1.05rem;
+            box-shadow: 0 8px 30px var(--brand-blue-glow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(56, 189, 248, 0.5);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: #ffffff;
+            font-weight: 600;
+            padding: 1rem 2rem;
+            border-radius: var(--radius-full);
+            text-decoration: none;
+            font-size: 1.05rem;
+            transition: background 0.2s;
+        }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); }
+
+        /* STATS STRIP */
+        .stats-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            max-width: 1050px;
+            margin: 4.5rem auto 0 auto;
+            padding: 1.8rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+        }
+        .stat-item h3 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 2.2rem;
+            background: var(--blue-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+        .stat-item p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        /* SECTION HEADERS */
+        .section-header {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 3.5rem auto;
+        }
+        .section-header h2 {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(2rem, 3.5vw, 2.8rem);
+            margin-bottom: 0.8rem;
+            color: #ffffff;
+        }
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+        }
+
+        /* SERVICES GRID */
+        .section {
+            padding: 6rem 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 2rem;
+        }
+        .service-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 2.2rem;
+            position: relative;
+            transition: transform 0.25s, border-color 0.25s, background 0.25s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .service-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--border-blue);
+            background: var(--bg-card-hover);
+        }
+        .service-icon {
+            font-size: 2.2rem;
+            margin-bottom: 1.2rem;
+        }
+        .service-tag {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--brand-cyan);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .service-card h3 {
+            font-size: 1.45rem;
+            margin-bottom: 0.8rem;
+            color: #ffffff;
+        }
+        .service-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+        }
+        .service-meta {
+            border-top: 1px solid var(--border-subtle);
+            padding-top: 1.2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .service-price {
+            font-weight: 800;
+            font-size: 1.3rem;
+            color: #ffffff;
+        }
+        .service-order-btn {
+            background: rgba(37, 99, 235, 0.15);
+            color: var(--brand-cyan);
+            border: 1px solid var(--border-blue);
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 0.55rem 1.3rem;
+            border-radius: var(--radius-full);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .service-order-btn:hover {
+            background: var(--blue-gradient);
+            color: #ffffff;
+        }
+
+        /* INTERACTIVE PACKAGE CALCULATOR */
+        .calculator-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-blue);
+            border-radius: var(--radius-lg);
+            padding: 3rem 2rem;
+            max-width: 920px;
+            margin: 0 auto;
+            box-shadow: var(--shadow-glow);
+        }
+        .calc-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.2rem;
+            margin: 2rem 0;
+        }
+        .calc-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .calc-item input {
+            accent-color: var(--brand-blue);
+            width: 1.25rem;
+            height: 1.25rem;
+            cursor: pointer;
+        }
+        .calc-item label {
+            cursor: pointer;
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .calc-item.active {
+            border-color: var(--brand-cyan);
+            background: rgba(37, 99, 235, 0.12);
+        }
+        .calc-summary {
+            text-align: center;
+            border-top: 1px solid var(--border-subtle);
+            padding-top: 2rem;
+            margin-top: 1rem;
+        }
+        .total-price {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 3.2rem;
+            background: var(--blue-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 900;
+            margin-bottom: 1.2rem;
+        }
+
+        /* TESTIMONIALS */
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        .testimonial-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+        }
+        .stars { color: var(--accent-gold); margin-bottom: 0.8rem; font-size: 1.1rem; }
+        .quote {
+            font-style: italic;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 1.2rem;
+        }
+        .author-info {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        .author-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-full);
+            background: var(--blue-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #ffffff;
+        }
+        .author-meta h4 { font-size: 0.95rem; color: #ffffff; }
+        .author-meta p { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* FLOATING WHATSAPP CTA */
+        .floating-wa {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 999;
+            background: #25d366;
+            color: #ffffff;
+            border-radius: var(--radius-full);
+            padding: 0.9rem 1.6rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-weight: 700;
+            text-decoration: none;
+            box-shadow: 0 8px 30px rgba(37, 211, 102, 0.4);
+            transition: transform 0.2s;
+        }
+        .floating-wa:hover { transform: scale(1.05); }
+
+        /* FOOTER */
+        footer {
+            border-top: 1px solid var(--border-subtle);
+            padding: 3.5rem 1.5rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        footer a { color: var(--brand-cyan); text-decoration: none; }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav>
+        <a href="#" class="nav-brand">
+            <div class="brand-logo-icon">↗</div>
+            <div class="nav-brand-text">akdam <span>studios</span></div>
+        </a>
+        <ul class="nav-links">
+            <li><a href="#services">Services</a></li>
+            <li><a href="#calculator">Launch Builder</a></li>
+            <li><a href="#reviews">Author Reviews</a></li>
+        </ul>
+        <a href="https://wa.me/447853164638?text=Hi%20Akdam%20Studios!%20I%20am%20an%20author%20and%20would%20like%20to%20get%20a%20free%20sample%20teaser." class="nav-cta">Free 15s Teaser</a>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="badge">🎬 Powered by Akdam Digital & Media Group</div>
+        <h1>Turn Your Book Into a <span>Viral Cinematic Sensation</span></h1>
+        <p class="lead">Akdam Studios builds Hollywood-quality 4K book trailers, bestselling cover redesigns, and viral BookTok reels engineered to turn casual scrollers into lifelong readers.</p>
+        <div class="hero-actions">
+            <a href="https://wa.me/447853164638?text=Hi%20Akdam%20Studios!%20I%20would%20like%20to%20claim%20my%20free%2015s%20book%20teaser%20concept." class="btn-primary">Claim Free 15s Teaser Concept</a>
+            <a href="#services" class="btn-secondary">Explore Author Services</a>
+        </div>
+
+        <div class="stats-strip">
+            <div class="stat-item">
+                <h3>350+</h3>
+                <p>Book Trailers Produced</p>
+            </div>
+            <div class="stat-item">
+                <h3>14.2M</h3>
+                <p>BookTok & Reels Views</p>
+            </div>
+            <div class="stat-item">
+                <h3>3.4x</h3>
+                <p>Avg. KDP Click-Through Boost</p>
+            </div>
+            <div class="stat-item">
+                <h3>100%</h3>
+                <p>Satisfaction Guarantee</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7 SERVICES SECTION -->
+    <section id="services" class="section">
+        <div class="section-header">
+            <h2>The Akdam Author Growth Suite</h2>
+            <p>High-converting visual production for indie authors, self-publishers, and storytellers.</p>
+        </div>
+
+        <div class="services-grid">
+
+            <!-- 1. Book Trailers -->
+            <div class="service-card">
+                <div>
+                    <div class="service-icon">🎥</div>
+                    <span class="service-tag">Viral Reach</span>
+                    <h3>Cinematic 30s Book Trailers</h3>
+                    <p>Movie-quality 9:16 vertical trailers with orchestral sound design, intense psychological tension, and 3D cover reveals tailored for TikTok, Reels & Amazon.</p>
+                </div>
+                <div class="service-meta">
+                    <span class="service-price">$180</span>
+                    <a href="https://wa.me/447853164638?text=Hi%20Akdam%20Studios,%20I'm%20interested%20in%20a%20Cinematic%20Book%20Trailer." class="service-order-btn">Order on WhatsApp</a>
+                </div>
+            </div>
+
+            <!-- 2. Cover Redesign -->
+            <div class="service-card">
+                <div>
+                    <div class="service-icon">🎨</div>
+                    <span class="service-tag">Bestseller Standard</span>
+                    <h3>Cover Redesign & 3D Box Sets</h3>
+                    <p>Typography and illustrative cover redesign matching current Amazon top 100 benchmarks across your genre, plus transparent 3D promo mockups.</p>
+                </div>
+                <div class="service-meta">
+                    <span class="service-price">$220</span>
+                    <a href="https://wa.me/447853164638?text=Hi%20Akdam%20Studios,%20I'm%20interested%20in%20a%20Cover%20Redesign%20and%203D%20Box%20Set." class="service-order-btn">Order on WhatsApp</a>
+                </div>
+            </div>
+
+            <!-- 3. Amazon A+ Content -->
+            <div class="service-card">
+                <div>
+                    <div class="service-icon">📈</div>
+                    <span class="service-tag">Sales Booster</span>
+                    <h3>Amazon KDP A+ Content Suite</h3>
+                    <p>High-converting graphic banners (character aesthetics, world maps, review quotes) designed to lift reader purchase conversion by 25%+.</p>
+                </div>
+                <div class="service-meta">
+                    <span class="service-price">$140</span>
+                    <a href="https://wa.me/447853164638?text=Hi%20Akdam%20Studios,%20I'm%20interested%20in%20Amazon%20A+%20Content." class="service-order-btn">Order on WhatsApp</a>
+                </div>
+            </div>
+
+            <!-- 4. Monthly BookTok Batch -->
+            <div class="service-card">
+                <div>
+                    <div class="service-icon">📱</div>
+                    <span class="service-tag">Hands-Off Viral</span>
+                    <h3>Monthly 20x BookTok Video Pack</h3>
+                    <p>We extract your best chapter tropes and quotes into 20 short-form video hooks with trending audio every month so you can focus 100% on writing.</p>
+                </div>
+                <div class="service-meta">
+                    <span class="service-price">$450/mo</span>
+                    <a href="https://wa.me/447853164638?text=Hi%20Akdam%20Studios,%20I'm%20interested%20in%20the%20Monthly%20BookTok%20Video%20Pack." class="service-order-btn">Order on WhatsApp</a>
+                </div>
+            </div>
+
+            <!-- 5. Audiobook Narration -->
+            <div class="service-card">
+                <div>
+                    <div class="service-icon">🎙️</div>
+                    <span class="service-tag">New Royalties</span>
+                    <h3>Audiobook Narration & Mastering</h3>
+                    <p>Studio-quality multi-voice narration with full ACX compliance ready to publish directly on Audible, Spotify & Apple Books.</p>
+                </div>
+                <div class="service-meta">
+                    <span class="service-price">$380</span>
+                    <a href="https://wa.me/447853164638?text=Hi%20Akdam%20Studios,%20I'm%20interested%20in%20Audiobook%20Narration." class="service-order-btn">Order on WhatsApp</a>
+                </div>
+            </div>
+
+            <!-- 6. Author Funnel -->
+            <div class="service-card">
+                <div>
+                    <div class="service-icon">🌐</div>
+                    <span class="service-tag">Direct Readers</span>
+                    <h3>Author Website & ARC Launch Funnel</h3>
+                    <p>Custom author portfolio with an automated Advance Reader Copy (ARC) lead magnet to build a loyal subscriber base for guaranteed launch day momentum.</p>
+                </div>
+                <div class="service-meta">
+                    <span class="service-price">$480</span>
+                    <a href="https://wa.me/447853164638?text=Hi%20Akdam%20Studios,%20I'm%20interested%20in%20an%20Author%20Website%20and%20Funnel." class="service-order-btn">Order on WhatsApp</a>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- INTERACTIVE PACKAGE CALCULATOR -->
+    <section id="calculator" class="section">
+        <div class="section-header">
+            <h2>Custom Launch Bundle Calculator</h2>
+            <p>Select the assets you need for your upcoming launch and lock in a bundle discount.</p>
+        </div>
+
+        <div class="calculator-box">
+            <div class="calc-options">
+                <div class="calc-item active" onclick="toggleCalc(this, 180, '30s Cinematic Trailer')">
+                    <input type="checkbox" checked>
+                    <label>Cinematic 30s Book Trailer <span>+$180</span></label>
+                </div>
+                <div class="calc-item" onclick="toggleCalc(this, 220, 'Cover Redesign & 3D Box Set')">
+                    <input type="checkbox">
+                    <label>Cover Redesign + 3D Mockups <span>+$220</span></label>
+                </div>
+                <div class="calc-item" onclick="toggleCalc(this, 140, 'Amazon A+ Content Suite')">
+                    <input type="checkbox">
+                    <label>Amazon KDP A+ Content Suite <span>+$140</span></label>
+                </div>
+                <div class="calc-item" onclick="toggleCalc(this, 450, '20x Monthly BookTok Pack')">
+                    <input type="checkbox">
+                    <label>Monthly 20x BookTok Video Pack <span>+$450</span></label>
+                </div>
+                <div class="calc-item" onclick="toggleCalc(this, 380, 'Audiobook Narration & ACX')">
+                    <input type="checkbox">
+                    <label>Audiobook Narration & ACX <span>+$380</span></label>
+                </div>
+                <div class="calc-item" onclick="toggleCalc(this, 480, 'Author Website & ARC Funnel')">
+                    <input type="checkbox">
+                    <label>Author Portfolio & ARC Funnel <span>+$480</span></label>
+                </div>
+            </div>
+
+            <div class="calc-summary">
+                <p style="color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700; font-size: 0.85rem;">Estimated Investment</p>
+                <div class="total-price" id="totalDisplay">$180</div>
+                <a href="#" id="calcWhatsAppBtn" class="btn-primary" style="display: inline-block;">Lock In Package on WhatsApp</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section id="reviews" class="section">
+        <div class="section-header">
+            <h2>Trusted by Bestselling Indie Authors</h2>
+            <p>See what authors say about Akdam Studios' cinematic trailers and cover transformations.</p>
+        </div>
+
+        <div class="testimonials-grid">
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <p class="quote">"The 30-second fantasy trailer Akdam Studios produced for my debut novel blew up on BookTok with 65k views in 48 hours. My Amazon pre-orders doubled in one week!"</p>
+                <div class="author-info">
+                    <div class="author-avatar">EV</div>
+                    <div class="author-meta">
+                        <h4>Elena Vance</h4>
+                        <p>Epic Fantasy Author</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <p class="quote">"My thriller was sitting at #80,000 on Kindle. After Akdam Studios redesigned my cover and added the Amazon A+ graphics, it climbed into the top #4,000 within 10 days."</p>
+                <div class="author-info">
+                    <div class="author-avatar">MC</div>
+                    <div class="author-meta">
+                        <h4>Marcus Cole</h4>
+                        <p>Psychological Thriller Author</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <p class="quote">"I used to spend 10 hours a week struggling to edit TikTok videos. Akdam Studios' 20-video monthly pack is brilliant, high aesthetic, and saves my sanity."</p>
+                <div class="author-info">
+                    <div class="author-avatar">SL</div>
+                    <div class="author-meta">
+                        <h4>Sarah Lin</h4>
+                        <p>Dark Romance Author</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FLOATING WHATSAPP -->
+    <a href="https://wa.me/447853164638?text=Hi%20Akdam%20Studios!%20I'm%20an%20author%20and%20would%20like%20to%20discuss%20a%20project." class="floating-wa">
+        <span>💬</span> Chat on WhatsApp (+44 7853 164638)
+    </a>
+
+    <!-- FOOTER -->
+    <footer>
+        <p>© 2026 Akdam Studios (part of Akdam Digital / akdamhq). Dedicated to Indie Authors & Storytellers worldwide.</p>
+        <p style="margin-top: 0.5rem;"><a href="https://wa.me/447853164638">Direct WhatsApp: +44 7853 164638</a></p>
+    </footer>
+
+    <!-- INTERACTIVE CALCULATOR JAVASCRIPT -->
+    <script>
+        let currentTotal = 180;
+        let selectedServices = ["30s Cinematic Trailer"];
+        const phone = "447853164638";
+
+        function updateWhatsAppLink() {
+            const listStr = selectedServices.join(", ");
+            const text = `Hi Akdam Studios! I created a custom launch bundle for my book on your website ($${currentTotal}): [${listStr}]. I'd like to get started!`;
+            const encoded = encodeURIComponent(text);
+            document.getElementById("calcWhatsAppBtn").href = `https://wa.me/${phone}?text=${encoded}`;
+        }
+
+        function toggleCalc(elem, price, name) {
+            const checkbox = elem.querySelector("input");
+            checkbox.checked = !checkbox.checked;
+            
+            if (checkbox.checked) {
+                elem.classList.add("active");
+                currentTotal += price;
+                if (!selectedServices.includes(name)) selectedServices.push(name);
+            } else {
+                elem.classList.remove("active");
+                currentTotal -= price;
+                selectedServices = selectedServices.filter(s => s !== name);
+            }
+
+            document.getElementById("totalDisplay").innerText = `$${currentTotal}`;
+            updateWhatsAppLink();
+        }
+
+        // Initialize link
+        updateWhatsAppLink();
+    </script>
+</body>
+</html>

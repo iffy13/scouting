@@ -1,0 +1,146 @@
+"""
+Paced sending. Sends your approved leads one at a time with a gap between each email.
+Uses the same checks as outreach.py send: the service's own mailbox only, verified address,
+blacklist, regulated region skip, and the daily cap.
+
+  python send_paced.py --service whatsapp_api --limit 10
+  python send_paced.py --service whatsapp_api --limit 10 --min-gap 4 --max-gap 9
+  python send_paced.py --service whatsapp_api --limit 10 --auto
+
+Gap is in minutes, picked at random between min and max for each email (default 3 to 8,
+or set SEND_GAP_MIN_MINUTES and SEND_GAP_MAX_MINUTES in .env). The gap can never be under 1 minute.
+Without --auto it still asks y, n or q for every message. With --auto it sends the leads you
+already approved without asking each time, and waits the gap between them.
+Press Ctrl+C at any time to stop. Nothing is lost.
+"""
+import argparse
+import asyncio
+import json
+import os
+import random
+import sys
+import time
+
+import tg
+from db import get_connection, is_email_blacklisted
+from outreach import CAREFUL_REGIONS, DAILY_CAP, _leads, _require_identity, build_message
+from scout import init_scout_tables
+from services import SERVICES, get_service
+
+MIN_GAP_FLOOR = 1.0  # minutes
+
+
+def wait_gap(lo: float, hi: float):
+    seconds = int(random.uniform(lo, hi) * 60)
+    print(f"Waiting before the next email. Ctrl+C to stop.")
+    while seconds > 0:
+        print(f"\r  next send in {seconds // 60}m {seconds % 60:02d}s   ", end="", flush=True)
+        time.sleep(1)
+        seconds -= 1
+    print("\r" + " " * 40 + "\r", end="")
+
+
+async def run(service_id: str, limit: int, lo: float, hi: float, auto: bool):
+    _require_identity()
+    init_scout_tables()
+    svc = get_service(service_id)
+    if not svc.mailbox:
+        sys.exit(f"No mailbox assigned to {service_id}. Fill mailbox_map.json.")
+    from sender.gmail_client import MultiGmailService
+    from verifier.email_verifier import EmailVerifier
+
+    pool = MultiGmailService(mode="all")
+    box = next((e for e in pool.accounts if e.lower() == svc.mailbox), None)
+    if not box:
+        sys.exit(f"{svc.mailbox} is not connected. Run: python outreach.py connect --service {service_id}")
+
+    with get_connection() as conn:
+        sent_today = conn.execute(
+            "SELECT COUNT(*) FROM scout_leads WHERE service_id=? AND DATE(sent_at)=DATE('now')", (service_id,)
+        ).fetchone()[0]
+    room = max(0, DAILY_CAP - sent_today)
+    if room == 0:
+        sys.exit(f"Daily cap of {DAILY_CAP} reached for {service_id}.")
+    target = min(limit, room)
+
+    verifier = EmailVerifier()
+    leads = list(_leads(service_id, "approved", target * 3))
+    sent = 0
+    try:
+        for r in leads:
+            if sent >= target:
+                break
+            lead = dict(r)
+            emails = json.loads(lead["emails_json"] or "[]")
+            if lead["country"] in CAREFUL_REGIONS:
+                print(f"#{lead['id']} {lead['name']}: regulated region, use contact form or LinkedIn. Skipped.")
+                continue
+            if not emails:
+                print(f"#{lead['id']} {lead['name']}: no email found. Skipped.")
+                continue
+            to = emails[0].lower()
+            with get_connection() as conn:
+                if is_email_blacklisted(to, conn):
+                    print(f"#{lead['id']} {to}: on blacklist. Skipped.")
+                    continue
+            verdict = (await verifier.verify(to)).get("verdict")
+            if verdict != "valid":
+                print(f"#{lead['id']} {to}: verification says {verdict}. Skipped.")
+                continue
+
+            subject, body = build_message(service_id, lead)
+            print("\n" + "=" * 70)
+            print(f"From:    {box}   (assigned mailbox for {service_id})")
+            print(f"To:      {to}")
+            print(f"Subject: {subject}\n\n{body}")
+            print("=" * 70)
+            if not auto:
+                choice = input("Send this one? [y]es / [n]o skip / [q]uit: ").strip().lower()
+                if choice == "q":
+                    break
+                if choice != "y":
+                    continue
+
+            res = pool.send_email(to_email=to, subject=subject, body_text=body, from_account_email=box, strict_sender=True)
+            if res:
+                with get_connection() as conn:
+                    conn.execute(
+                        "UPDATE scout_leads SET status='contacted', sent_at=CURRENT_TIMESTAMP, sender_inbox=?, gmail_thread_id=? WHERE id=?",
+                        (res["from_email"], res["thread_id"], lead["id"]),
+                    )
+                    conn.commit()
+                sent += 1
+                print(f"Sent from {res['from_email']}. ({sent} of {target})")
+                if sent < target:
+                    wait_gap(lo, hi)
+            else:
+                print(f"Not sent ({pool.last_failure}). Lead stays approved.")
+                if pool.last_failure == "no_capacity":
+                    break
+    except KeyboardInterrupt:
+        print("\nStopped by you. Leads not sent stay approved.")
+
+    print(f"\nDone. Sent {sent}. Today for {service_id}: {sent_today + sent}/{DAILY_CAP}")
+    if sent:
+        tg.send(
+            f"<b>Paced sending finished: {tg.esc(service_id)}</b>\n"
+            f"Sent just now: {sent} from {tg.esc(box)}\nToday: {sent_today + sent} of {DAILY_CAP}"
+        )
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Paced sending")
+    ap.add_argument("--service", required=True, choices=list(SERVICES))
+    ap.add_argument("--limit", type=int, default=10)
+    ap.add_argument("--min-gap", type=float, default=float(os.getenv("SEND_GAP_MIN_MINUTES", "3")))
+    ap.add_argument("--max-gap", type=float, default=float(os.getenv("SEND_GAP_MAX_MINUTES", "8")))
+    ap.add_argument("--auto", action="store_true")
+    a = ap.parse_args()
+    lo = max(MIN_GAP_FLOOR, a.min_gap)
+    hi = max(lo, a.max_gap)
+    print(f"Pacing: {lo:g} to {hi:g} minutes between emails.")
+    asyncio.run(run(a.service, a.limit, lo, hi, a.auto))
+
+
+if __name__ == "__main__":
+    main()

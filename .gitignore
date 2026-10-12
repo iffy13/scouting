@@ -1,0 +1,15 @@
+mailbox_map.json
+.env
+token.json
+credentials.json
+accounts/
+*.db
+__pycache__/
+exports/
+.data_restored
+.scout_mark
+new_leads.json
+*.log
+new_leads.json.enc
+outreach.db.enc
+autopilot.lock

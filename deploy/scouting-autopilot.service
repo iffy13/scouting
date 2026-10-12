@@ -1,0 +1,16 @@
+[Unit]
+Description=Scouting outreach autopilot (scout, paced sends, follow ups, Telegram alerts)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=scout
+WorkingDirectory=__APP_DIR__
+ExecStart=__APP_DIR__/.venv-linux/bin/python __APP_DIR__/autopilot_local.py
+Restart=always
+RestartSec=60
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
