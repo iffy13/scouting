@@ -257,24 +257,22 @@ OFFERS = [
     "at before anything is built.",
 ]
 CLOSERS = [
-    "If you'd like to see some of my work, reply \"samples\" and I'll send a few examples.",
-    "Would a few samples be useful? Reply \"samples\" and I'll send some.",
-    "Is that something you'd want help with on an upcoming project?",
-    "Want me to send a few samples?",
-    "If a project is coming up, I can quote from the plans.",
-    "I can send a few samples if that would help. Just reply \"samples\".",
-    "Is there a project coming up where visuals would help?",
+    "Do you have a project coming up where visuals would help? I'd be glad to hear about it.",
+    "How do you show clients a design before it's built today?",
+    "Would you be open to a quick chat about an upcoming project?",
+    "Is there a project on your desk right now where renders would help? Happy to talk it through.",
+    "What do you use for client visuals at the moment?",
 ]
 
 # One follow up, written to stand alone so any follow up pairs with any first email. No opt out sentence in the
 # body, the footer already carries it.
 FOLLOWUPS = [
-    "Following up on my note about 3D renders for {name}. If a project needs visuals, reply \"samples\" and I'll send "
-    "a few examples.",
-    "I wanted to close the loop on my note about 3D renders. If visuals are already covered, ignore this. If not, "
-    "I'm happy to send some samples.",
-    "One last note from me on 3D visuals. Reply \"samples\" if you'd like to see some examples, otherwise I'll leave "
-    "it there.",
+    "Just bringing this back up in case it got buried. Is there a project at {name} where 3D visuals would help? "
+    "Happy to hear about it.",
+    "A quick follow up on my note about 3D renders. If a client presentation is coming up, I'd be glad to talk it "
+    "through.",
+    "One last note from me. If visuals are already covered, no worries. If not, I'm happy to have a short chat about "
+    "your next project.",
 ]
 
 

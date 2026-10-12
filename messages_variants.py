@@ -120,10 +120,10 @@ RECEPTIONIST_OFFERS = [
     "I set up an AI phone assistant that answers, notes who called and why, and sends you the details.",
 ]
 RECEPTIONIST_CLOSERS = [
-    "If you'd like to hear a sample call, reply \"demo\" and I'll send a short recording.",
-    "Would hearing a sample call be useful? Reply \"demo\" and I'll send one.",
-    "Want me to send a sample call so you can hear it?",
-    "Is that something you'd want covered, or is the phone already handled?",
+    "How are you handling calls that come in after hours right now?",
+    "Would you be open to a quick chat about how it could fit {name}?",
+    "What does your call setup look like at the moment? Happy to talk it through.",
+    "How do you handle calls when the team is tied up? I'd be glad to hear how it works now.",
 ]
 
 WHATSAPP_OPENERS = [
@@ -143,10 +143,10 @@ WHATSAPP_OFFERS = [
     "routine questions get an automatic reply.",
 ]
 WHATSAPP_CLOSERS = [
-    "Would a short outline of how that would work be useful?",
-    "Should I send a short outline?",
-    "If it's relevant, I can send a short outline of how it works and what it costs.",
-    "Worth a quick look?",
+    "How are you handling WhatsApp messages at the moment?",
+    "Would you be open to a quick chat about how this could work for {name}?",
+    "What does your WhatsApp setup look like today? Happy to talk it through.",
+    "Is this worth a short conversation?",
 ]
 
 SEEN_OPENERS = [
@@ -166,29 +166,28 @@ SEEN_OFFERS = [
     "routine questions. I set that up.",
 ]
 SEEN_CLOSERS = [
-    "Should I send a short outline?",
-    "I can send a short outline of how it works.",
-    "Worth a quick look?",
+    "How is the team managing those chats right now?",
+    "Would you be open to a quick chat about it?",
+    "Happy to talk through how it would work for {name}. Would that be useful?",
 ]
 
 # The one follow up. Written to stand alone (it never refers to a detail of the first email), so any follow up
 # can pair with any first email. No opt out sentence in the body, the footer already carries it.
 FOLLOWUPS = {
     "receptionist": [
-        "Following up on my note about calls at {name}. If it would help to hear what a call sounds like, reply "
-        "\"demo\" and I'll send a short recording.",
-        "I wanted to close the loop on my note about phone calls. If the phone is already covered, ignore this. If "
-        "not, I'm happy to send a sample call.",
-        "One last note from me on phone answering. Reply \"demo\" if you'd like a short sample call, otherwise I'll "
-        "leave it there.",
+        "Just bringing this back up in case it got buried. How are calls handled at {name} when nobody can pick up? "
+        "Happy to talk it through.",
+        "A quick follow up on my note about phone answering. If missed calls are ever a problem, I'd be glad to hear "
+        "how things work now and share a few ideas.",
+        "One last note from me. If the phone is already covered, no worries. If not, I'm happy to have a short chat "
+        "about it.",
     ],
     "whatsapp_api": [
-        "Following up on my note about WhatsApp at {name}. Is it mostly one person answering from a single phone, or "
-        "does a team already share it?",
-        "I wanted to close the loop on my WhatsApp note. If a short outline of how a shared inbox would work would "
-        "help, reply \"outline\" and I'll send it.",
-        "One last note from me on WhatsApp. Reply \"outline\" if you'd like the short version of how it would work, "
-        "otherwise I'll leave it there.",
+        "Just bringing this back up in case it got buried. How does {name} handle WhatsApp messages at the moment?",
+        "A quick follow up on my WhatsApp note. If customer chats are getting busy, I'd be glad to hear how you handle "
+        "them now and share a few ideas.",
+        "One last note from me. If WhatsApp is already sorted, no worries. If not, I'm happy to have a short chat "
+        "about it.",
     ],
 }
 
