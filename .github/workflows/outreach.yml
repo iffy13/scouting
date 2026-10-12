@@ -52,7 +52,12 @@ jobs:
       ACCOUNT_BOOKS_JSON: ${{ secrets.ACCOUNT_BOOKS_JSON }}
       SCOUT_DAILY_CAP: ${{ vars.SCOUT_DAILY_CAP || '25' }}
       OUTREACH_PAUSED: ${{ vars.OUTREACH_PAUSED || 'false' }}
-      AP_SCOUT_MAX: ${{ vars.AP_SCOUT_MAX || '20' }}
+      # Each send run scouts first when its queue is running low (fewer than SCOUT_BACKLOG_MAX approved leads
+      # waiting), then sends. A full queue skips scouting, so no Serper credits are spent for nothing.
+      AP_SCOUT_MAX: ${{ vars.AP_SCOUT_MAX || '10' }}
+      SCOUT_BACKLOG_MAX: ${{ vars.SCOUT_BACKLOG_MAX || '25' }}
+      SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
+      SERPER_MAX_QUERIES: ${{ vars.SERPER_MAX_QUERIES || '6' }}
       AP_SEND_LIMIT: ${{ vars.AP_SEND_LIMIT || '8' }}
       AP_FOLLOWUP_LIMIT: ${{ vars.AP_FOLLOWUP_LIMIT || '4' }}
       DEMO_LINK: ${{ vars.DEMO_LINK }}
@@ -88,7 +93,6 @@ jobs:
         run: >
           python autopilot.py
           --service ${{ steps.pick.outputs.service }}
-          --scout-max 0
           ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
       - name: Save database
         if: always()
