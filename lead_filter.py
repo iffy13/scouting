@@ -35,7 +35,10 @@ TITLE_PATTERNS = [
     r"\b(top|best)\s+\d*\s*\w*",                    # "Top 10", "Best ..."
     r"\blist of\b", r"\bguide\b", r"\bhow to\b", r"\bvs\.?\b", r"\breviews?\b", r"\branking",
     r"\b(apps|websites|companies|sites|platforms|stores|shops|agencies)\s+(in|for|near)\b",
-    r"\bmarket share\b", r"\bdirectory\b", r"\bonline shopping\b", r"\bin (the )?(uae|dubai|italy|portugal|spain|germany|uk)\s*(&|and|\(|for|\d{4})",
+    r"\bmarket share\b", r"\bdirectory\b",
+    # trade bodies and lists of members, not a business that buys
+    r"\bassociations?\b", r"\bfederation\b", r"\bcouncil\b", r"\bchamber of commerce\b", r"\bguild\b",
+    r"\bby (province|state|city|region|territory)\b", r"\bnear me\b", r"\bonline shopping\b", r"\bin (the )?(uae|dubai|italy|portugal|spain|germany|uk)\s*(&|and|\(|for|\d{4})",
 ]
 GOV_EDU = (".gov", ".gob.", ".edu", ".ac.", "u.ae", ".mil")
 # Page titles that are not a business name (offers/cleaner.py swaps them for the domain name)

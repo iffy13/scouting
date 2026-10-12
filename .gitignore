@@ -13,3 +13,5 @@ new_leads.json
 new_leads.json.enc
 outreach.db.enc
 autopilot.lock
+outreach_report*.xlsx
+*.xlsx

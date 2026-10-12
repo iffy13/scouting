@@ -8,6 +8,7 @@ on:
     # skips any country whose weekend it is.
     # Odd minutes on purpose: GitHub drops many scheduled runs at :00 and :30, when everyone's crons fire.
     - cron: "7 6 * * 0-5"    # WhatsApp: Gulf 09:07-10:07, Singapore and Malaysia 14:07
+    - cron: "13 9 * * 0-5"   # WhatsApp: Gulf 12:13-13:13 (third run, so WhatsApp also reaches 30 a day)
     - cron: "41 10 * * 0-5"  # WhatsApp: Gulf 13:41-14:41
     - cron: "7 8 * * 0-5"    # 3D rendering: Gulf 11:07-12:07, Singapore and Malaysia 16:07
     - cron: "7 20 * * 1-5"   # 3D rendering: US and Canada 15:07 Eastern, New Zealand 08:07
@@ -50,15 +51,15 @@ jobs:
       ACCOUNT_WHATSAPP_JSON: ${{ secrets.ACCOUNT_WHATSAPP_JSON }}
       ACCOUNT_RECEPTIONIST_JSON: ${{ secrets.ACCOUNT_RECEPTIONIST_JSON }}
       ACCOUNT_BOOKS_JSON: ${{ secrets.ACCOUNT_BOOKS_JSON }}
-      SCOUT_DAILY_CAP: ${{ vars.SCOUT_DAILY_CAP || '25' }}
+      SCOUT_DAILY_CAP: ${{ vars.SCOUT_DAILY_CAP || '30' }}
       OUTREACH_PAUSED: ${{ vars.OUTREACH_PAUSED || 'false' }}
       # Each send run scouts first when its queue is running low (fewer than SCOUT_BACKLOG_MAX approved leads
       # waiting), then sends. A full queue skips scouting, so no Serper credits are spent for nothing.
       AP_SCOUT_MAX: ${{ vars.AP_SCOUT_MAX || '10' }}
-      SCOUT_BACKLOG_MAX: ${{ vars.SCOUT_BACKLOG_MAX || '25' }}
+      SCOUT_BACKLOG_MAX: ${{ vars.SCOUT_BACKLOG_MAX || '40' }}
       SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
       SERPER_MAX_QUERIES: ${{ vars.SERPER_MAX_QUERIES || '6' }}
-      AP_SEND_LIMIT: ${{ vars.AP_SEND_LIMIT || '8' }}
+      AP_SEND_LIMIT: ${{ vars.AP_SEND_LIMIT || '10' }}  # 3 runs per service x 10 = 30 a day per mailbox
       AP_FOLLOWUP_LIMIT: ${{ vars.AP_FOLLOWUP_LIMIT || '4' }}
       DEMO_LINK: ${{ vars.DEMO_LINK }}
       DATA_REMOTE: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git

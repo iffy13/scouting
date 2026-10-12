@@ -63,3 +63,24 @@ def find_chat_id() -> str:
     except Exception:
         pass
     return ""
+
+
+def send_document(path: str, caption: str = "") -> bool:
+    """Send a file (for example the Excel report) to your Telegram chat. Returns True on success.
+    Telegram is private to you, so the report never goes into the public repository or its logs."""
+    if not configured():
+        return False
+    try:
+        with open(path, "rb") as f:
+            r = requests.post(
+                f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendDocument",
+                data={"chat_id": TELEGRAM_CHAT_ID, "caption": caption[:1000], "parse_mode": "HTML"},
+                files={"document": (path.replace("\\", "/").split("/")[-1], f)},
+                timeout=60,
+            )
+        if r.status_code != 200:
+            logger.warning("Telegram said %s when sending a file", r.status_code)
+        return r.status_code == 200
+    except Exception as e:
+        logger.warning("Telegram file not sent: %s", type(e).__name__)
+        return False

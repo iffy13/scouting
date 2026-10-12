@@ -74,7 +74,7 @@ def init_scout_tables():
         """)
         for col in ("sent_at TIMESTAMP", "sender_inbox TEXT", "gmail_thread_id TEXT",
                     "last_reply_id TEXT", "reply_snippet TEXT", "replied_at TIMESTAMP", "sent_subject TEXT",
-                    "followup_sent_at TIMESTAMP", "skip_reason TEXT", "send_attempts INTEGER DEFAULT 0", "sent_to TEXT"):
+                    "followup_sent_at TIMESTAMP", "skip_reason TEXT", "send_attempts INTEGER DEFAULT 0", "sent_to TEXT", "sent_body TEXT", "followup_body TEXT"):
             try:
                 conn.execute(f"ALTER TABLE scout_leads ADD COLUMN {col}")
             except Exception:

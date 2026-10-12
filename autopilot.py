@@ -257,8 +257,12 @@ def daily(a):
     import followup
 
     send_paced.wait_gap = quiet_wait  # one short log line per wait instead of a countdown
+    os.environ["AUTOPILOT_RUN"] = "1"  # send_paced and followup leave the Telegram message to run_details
 
     before = sent_today(sid)
+    from db import get_connection
+    with get_connection() as conn:
+        run_start = conn.execute("SELECT datetime('now')").fetchone()[0]
     if a.scout_max > 0:
         try:
             asyncio.run(scout.scout_service(sid, COUNTRIES[sid], [], a.scout_max))
@@ -296,13 +300,40 @@ def daily(a):
         reply_line = f"reply check failed: {str(e)[:80]}"
 
     sent_now = sent_today(sid) - before
-    text = f"<b>Autopilot: {tg.esc(sid)}</b>\nEmails sent this run: {sent_now}\nReplies check: {tg.esc(reply_line)}"
+    text = f"<b>Autopilot: {tg.esc(sid)}</b>\n" + run_details(sid, run_start, open_now) + f"\nReplies check: {tg.esc(reply_line)}"
     if notes:
         text += "\n\n<b>Attention</b>\n" + "\n".join(tg.esc(n) for n in notes)
     tg.send(text)
     log(f"finished. sent {sent_now}. {reply_line}")
     if config_problems:
         sys.exit(f"Run failed: {len(config_problems)} setup problem(s) stopped sending for {sid}, see the lines above.")
+
+
+def run_details(sid: str, run_start: str, open_now: list) -> str:
+    """Telegram lines listing who was emailed and followed up in this run (Telegram is private, so names and
+    addresses are shown in full there, never in the public GitHub log), plus today's count and the queue."""
+    from db import get_connection
+    from outreach import DAILY_CAP
+    with get_connection() as conn:
+        new = conn.execute(
+            "SELECT name, country, sent_to, emails_json, sent_subject FROM scout_leads WHERE service_id=? AND sent_at >= ? ORDER BY sent_at",
+            (sid, run_start)).fetchall()
+        fu = conn.execute(
+            "SELECT name, country FROM scout_leads WHERE service_id=? AND followup_sent_at >= ? ORDER BY followup_sent_at",
+            (sid, run_start)).fetchall()
+        queue = conn.execute("SELECT COUNT(*) FROM scout_leads WHERE service_id=? AND status='approved'", (sid,)).fetchone()[0]
+    lines = [f"Countries in business hours: {', '.join(open_now) or 'none (nothing to send now)'}",
+             f"New emails this run: {len(new)}"]
+    for r in new[:15]:
+        to = r["sent_to"] or (json.loads(r["emails_json"] or "[]")[:1] or [""])[0]
+        lines.append(f"  • {tg.esc(r['name'])} ({tg.esc(r['country'])}) {tg.esc(to)}")
+    if len(new) > 15:
+        lines.append(f"  … and {len(new) - 15} more (see the Excel report)")
+    if fu:
+        lines.append(f"Follow ups this run: {len(fu)}")
+        lines += [f"  • {tg.esc(r['name'])} ({tg.esc(r['country'])})" for r in fu[:10]]
+    lines.append(f"Today so far: {sent_today(sid)} of {DAILY_CAP}. Waiting in the queue: {queue}")
+    return "\n".join(lines)
 
 
 def main():

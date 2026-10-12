@@ -287,8 +287,8 @@ async def cmd_send(service_id: str, limit: int):
         if res:
             with get_connection() as conn:
                 conn.execute(
-                    "UPDATE scout_leads SET status='contacted', sent_at=CURRENT_TIMESTAMP, sender_inbox=?, gmail_thread_id=?, sent_subject=?, sent_to=? WHERE id=?",
-                    (res["from_email"], res["thread_id"], subject, to, lead["id"]),
+                    "UPDATE scout_leads SET status='contacted', sent_at=CURRENT_TIMESTAMP, sender_inbox=?, gmail_thread_id=?, sent_subject=?, sent_to=?, sent_body=? WHERE id=?",
+                    (res["from_email"], res["thread_id"], subject, to, body, lead["id"]),
                 )
                 conn.commit()
             sent += 1

@@ -9,6 +9,7 @@ One polite follow up per business, as a reply in the same thread and from the sa
 and have not had a follow up yet. Same pacing gap as send_paced.py.
 """
 import argparse
+import os
 import json
 import sys
 
@@ -137,7 +138,7 @@ def cmd_send(service_id, days, limit, lo, hi, auto, countries=None):
             )
             if res:
                 with get_connection() as conn:
-                    conn.execute("UPDATE scout_leads SET followup_sent_at=CURRENT_TIMESTAMP WHERE id=?", (lead["id"],))
+                    conn.execute("UPDATE scout_leads SET followup_sent_at=CURRENT_TIMESTAMP, followup_body=? WHERE id=?", (body, lead["id"]))
                     conn.commit()
                 sent += 1
                 print(f"Follow up sent. ({sent} of {limit})")
@@ -150,7 +151,7 @@ def cmd_send(service_id, days, limit, lo, hi, auto, countries=None):
     except KeyboardInterrupt:
         print("\nStopped by you.")
     print(f"\nDone. {sent} follow up(s) sent.")
-    if sent:
+    if sent and not os.getenv("AUTOPILOT_RUN"):  # the autopilot sends one combined message instead
         tg.send(f"<b>Follow ups sent: {tg.esc(service_id)}</b>\n{sent} from {tg.esc(box)}")
 
 
