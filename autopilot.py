@@ -104,7 +104,9 @@ def bounce_problem():
         bounced = conn.execute(
             "SELECT COUNT(*) FROM scout_leads WHERE sent_at >= ? AND status='skipped'", (since,)
         ).fetchone()[0]
-    if sent >= 10 and bounced / sent > limit:
+    # One bounce in a handful of emails is noise, not a trend: judge only after 20 sends and at least 3 bounces.
+    min_sent = int(os.getenv("BOUNCE_MIN_SENT") or 20)
+    if sent >= min_sent and bounced >= 3 and bounced / sent > limit:
         return (f"{bounced} bounced emails out of {sent} sent since {since[:16]} UTC "
                 f"(limit {limit:.0%}). Fix the cause, then set the GitHub variable BOUNCE_RESET_AT to resume")
     return None
