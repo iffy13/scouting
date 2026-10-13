@@ -44,11 +44,27 @@ POSTAL_ADDRESS = os.getenv("POSTAL_ADDRESS", "")
 DAILY_CAP = int(os.getenv("SCOUT_DAILY_CAP", "20"))
 
 
+SENDER_TITLE = os.getenv("SENDER_TITLE", "Founder")
+WEBSITE_URL = os.getenv("WEBSITE_URL", "")
+
+
+def website_text() -> str:
+    """The site as plain text without https:// (iffystudios.com), the way most cold emailers show it: one clean
+    address in the signature, not a clickable button, no shortener, no tracking."""
+    w = (WEBSITE_URL or "").strip()
+    for prefix in ("https://", "http://"):
+        if w.lower().startswith(prefix):
+            w = w[len(prefix):]
+    return w.rstrip("/")
+
+
 def footer() -> str:
-    return (
-        f"\n{SENDER_NAME}\n{BUSINESS_NAME} · {POSTAL_ADDRESS}\n"
-        "Not relevant? Reply \"stop\" and I won't email you again."
-    )
+    """Professional plain text signature: name, role, business, website, postal address, then the opt out line."""
+    lines = [SENDER_NAME, f"{SENDER_TITLE}, {BUSINESS_NAME}" if SENDER_TITLE else BUSINESS_NAME]
+    if website_text():
+        lines.append(website_text())
+    lines.append(POSTAL_ADDRESS)
+    return "\n" + "\n".join(l for l in lines if l) + "\n\nNot relevant? Reply \"stop\" and I won't email you again."
 
 
 def build_message(service_id: str, lead: Dict[str, Any]) -> Tuple[str, str]:

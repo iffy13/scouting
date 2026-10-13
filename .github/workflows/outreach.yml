@@ -43,6 +43,8 @@ jobs:
       BUSINESS_NAME: ${{ secrets.BUSINESS_NAME }}
       POSTAL_ADDRESS: ${{ secrets.POSTAL_ADDRESS }}
       SENDER_NAME: ${{ secrets.SENDER_NAME }}
+      SENDER_TITLE: ${{ vars.SENDER_TITLE || 'Founder' }}
+      WEBSITE_URL: ${{ vars.WEBSITE_URL }}
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       DB_PASSPHRASE: ${{ secrets.DB_PASSPHRASE }}

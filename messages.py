@@ -107,6 +107,13 @@ def compose(service_id: str, lead: Dict[str, Any], footer_text: str) -> Optional
     return subject, body + "\n\n" + footer_text.lstrip("\n")
 
 
+def _team_hello(body: str, name: str) -> str:
+    """Same greeting as the first email: "Hi Glow Med Spa team," instead of a bare "Hello," when the name is usable."""
+    if body.startswith("Hello,") and name != UNUSABLE_NAME and len(name) <= 30:
+        return f"Hi {name} team," + body[len("Hello,"):]
+    return body
+
+
 def compose_followup(service_id: str, lead: Dict[str, Any], footer_text: str) -> Optional[Tuple[str, str]]:
     """The one follow up, sent as a reply in the same Gmail thread. Uses the subject that was actually sent
     (sent_subject); older leads sent before that column existed get the subject recomputed."""
@@ -118,12 +125,12 @@ def compose_followup(service_id: str, lead: Dict[str, Any], footer_text: str) ->
     if service_id == "render_3d":
         import render3d
         subject, body = render3d.build_followup(name, lead.get("owner_name"), lead.get("country"), _seed(lead), first_subject)
-        return subject, body + "\n\n" + footer_text.lstrip("\n")
+        return subject, _team_hello(body, name) + "\n\n" + footer_text.lstrip("\n")
     if service_id not in PACKS:
         return None
     subject, body = build_followup(service_id, name, lead.get("owner_name"), lead.get("country"),
                                    _seed(lead), first_subject)
-    return subject, body + "\n\n" + footer_text.lstrip("\n")
+    return subject, _team_hello(body, name) + "\n\n" + footer_text.lstrip("\n")
 
 
 if __name__ == "__main__":

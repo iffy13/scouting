@@ -140,7 +140,7 @@ WA_OFFERS = [
     "I set up the official WhatsApp Business API: your whole team answers from one number, and common questions like "
     "prices, hours and bookings get an instant automatic reply, day or night.",
     "With the official WhatsApp Business API, chats go to one shared team inbox, routine questions are answered "
-    "automatically, and nothing gets lost on someone's personal phone. That's what I set up.",
+    "automatically, and nothing gets lost on someone's personal phone. I set this up for businesses like yours.",
 ]
 WA_CLOSERS = [
     "How are you handling WhatsApp messages at the moment?",
@@ -259,7 +259,10 @@ def build(service: str, niche: str, name: str, owner_name: Optional[str], countr
     hook = _hook(service, f, niche, seed, ok)
     parts = [hook, _pick(offers, seed, "offer", ok), _pick(closers, seed, "closer", ok)]
     body = "\n\n".join(p.format(name=shown) for p in parts if p)
-    return subject, f"{greeting(owner_name, country)}\n\n{body}"
+    hello = greeting(owner_name, country)
+    if hello == "Hello," and ok and len(shown) <= 30:
+        hello = f"Hi {shown} team,"  # warmer than a bare "Hello," when we know the business but not a person
+    return subject, f"{hello}\n\n{body}"
 
 
 # --------------------------------------------------------------------------- self test
