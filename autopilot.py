@@ -85,21 +85,28 @@ def mailbox_ready(service_id: str):
 
 
 def bounce_problem():
-    """Returns a message when too many emails bounced lately, otherwise None."""
+    """Returns a message when too many emails bounced lately, otherwise None.
+
+    Counts bounced EMAILS (one per lead), not blacklisted addresses: a bounced lead blacklists every address found
+    on its site, which used to count one bounce up to three times.
+    BOUNCE_LIMIT_PCT (default 8) sets the limit. BOUNCE_RESET_AT (a GitHub variable, e.g. 2026-10-13 09:00) makes the
+    guard ignore everything sent before that moment: set it after fixing the cause (for example after adding an
+    email verification key), so sending can resume without waiting 7 days for old bounces to age out."""
     from db import get_connection
     from scout import init_scout_tables
 
     init_scout_tables()
+    limit = float(os.getenv("BOUNCE_LIMIT_PCT") or 8) / 100
+    reset = (os.getenv("BOUNCE_RESET_AT") or "").strip().replace("T", " ")
     with get_connection() as conn:
-        sent = conn.execute("SELECT COUNT(*) FROM scout_leads WHERE sent_at >= datetime('now','-7 days')").fetchone()[0]
-        try:
-            bounced = conn.execute(
-                "SELECT COUNT(*) FROM blacklist WHERE reason='bounce' AND created_at >= datetime('now','-7 days')"
-            ).fetchone()[0]
-        except Exception:
-            bounced = 0
-    if sent >= 10 and bounced / sent > 0.08:
-        return f"{bounced} bounces from {sent} emails in 7 days"
+        since = conn.execute("SELECT MAX(datetime('now','-7 days'), COALESCE(datetime(?), '0'))", (reset or None,)).fetchone()[0]
+        sent = conn.execute("SELECT COUNT(*) FROM scout_leads WHERE sent_at >= ?", (since,)).fetchone()[0]
+        bounced = conn.execute(
+            "SELECT COUNT(*) FROM scout_leads WHERE sent_at >= ? AND status='skipped'", (since,)
+        ).fetchone()[0]
+    if sent >= 10 and bounced / sent > limit:
+        return (f"{bounced} bounced emails out of {sent} sent since {since[:16]} UTC "
+                f"(limit {limit:.0%}). Fix the cause, then set the GitHub variable BOUNCE_RESET_AT to resume")
     return None
 
 
