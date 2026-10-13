@@ -91,21 +91,19 @@ def _seed(lead: Dict[str, Any]) -> str:
 
 
 def compose(service_id: str, lead: Dict[str, Any], footer_text: str) -> Optional[Tuple[str, str]]:
-    if service_id == "render_3d":
-        import render3d
-        name = display_name(lead.get("name")) or UNUSABLE_NAME
-        niche = render3d.detect_niche(lead.get("keyword"), lead.get("name"), lead.get("domain"))
-        subject, body = render3d.build_first(niche, name, lead.get("owner_name"), lead.get("country"), _seed(lead))
-        return subject, body + "\n\n" + footer_text.lstrip("\n")
-    if service_id not in PACKS:
+    """First email: a pain point hook built from what the scout found on the lead's site (pitch.py), what changes
+    for them, and one easy question. The same lead always gets the same email (seeded by its domain)."""
+    import pitch
+    if service_id not in ("whatsapp_api", "receptionist", "render_3d"):
         return None
     name = display_name(lead.get("name")) or UNUSABLE_NAME
-    key, noun = _pick_niche(service_id, lead.get("keyword", ""))
-    evidence = " ".join(json.loads(lead.get("evidence_json") or "[]")).lower()
-    seen = service_id == "whatsapp_api" and "whatsapp click" in evidence
-    trade = noun if service_id == "receptionist" else "local businesses"
-    subject, body = build_first(service_id, key, noun, trade, name, lead.get("owner_name"),
-                                lead.get("country"), seen, _seed(lead))
+    evidence = " | ".join(json.loads(lead.get("evidence_json") or "[]"))
+    if service_id == "render_3d":
+        import render3d
+        niche = render3d.detect_niche(lead.get("keyword"), lead.get("name"), lead.get("domain"))
+    else:
+        niche = _pick_niche(service_id, lead.get("keyword", ""))[0]
+    subject, body = pitch.build(service_id, niche, name, lead.get("owner_name"), lead.get("country"), evidence, _seed(lead))
     return subject, body + "\n\n" + footer_text.lstrip("\n")
 
 
