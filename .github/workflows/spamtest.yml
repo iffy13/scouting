@@ -1,0 +1,58 @@
+name: Spam test
+
+# Sends the REAL first email (same subject, wording and signature a lead gets) from your mailbox to an address you
+# choose, so you can see if it lands in Inbox or Spam. Runs on GitHub because your PC's internet blocks mail ports.
+#   gh workflow run spamtest.yml -f to=you@gmail.com -f service=receptionist
+# Nothing is marked as sent and the database is not saved.
+on:
+  workflow_dispatch:
+    inputs:
+      to:
+        description: "Send the test to this address"
+        required: true
+      service:
+        description: "Which service's email"
+        type: choice
+        options: [receptionist, whatsapp_api, render_3d]
+        default: receptionist
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BUSINESS_NAME: ${{ secrets.BUSINESS_NAME }}
+      POSTAL_ADDRESS: ${{ secrets.POSTAL_ADDRESS }}
+      SENDER_NAME: ${{ secrets.SENDER_NAME }}
+      SENDER_TITLE: ${{ vars.SENDER_TITLE || 'Founder' }}
+      WEBSITE_URL: ${{ vars.WEBSITE_URL }}
+      WEBSITE_IN_EMAILS: ${{ vars.WEBSITE_IN_EMAILS || 'false' }}
+      DB_PASSPHRASE: ${{ secrets.DB_PASSPHRASE }}
+      MAILBOX_MAP_JSON: ${{ secrets.MAILBOX_MAP_JSON }}
+      SMTP_ACCOUNTS_JSON: ${{ secrets.SMTP_ACCOUNTS_JSON }}
+      ACCOUNT_WHATSAPP_JSON: ${{ secrets.ACCOUNT_WHATSAPP_JSON }}
+      ACCOUNT_RECEPTIONIST_JSON: ${{ secrets.ACCOUNT_RECEPTIONIST_JSON }}
+      ACCOUNT_BOOKS_JSON: ${{ secrets.ACCOUNT_BOOKS_JSON }}
+      DATA_REMOTE: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+      TEST_TO: ${{ github.event.inputs.to }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install packages
+        run: pip install -r requirements.txt
+      - name: Prepare (read only)
+        run: |
+          printf '%s' "$MAILBOX_MAP_JSON" > mailbox_map.json
+          python autopilot.py --prepare
+          bash ci/data_sync.sh restore
+      - name: Send the test email
+        run: python test_send.py --to "$TEST_TO" --service ${{ github.event.inputs.service }}
+      - name: Clean up
+        if: always()
+        run: rm -rf outreach.db accounts mailbox_map.json

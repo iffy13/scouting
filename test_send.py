@@ -17,6 +17,7 @@ from db import get_connection
 from outreach import _require_identity, build_message
 from scout import init_scout_tables
 from services import load_mailbox_map
+from safety import mask_email
 
 SAMPLE = {
     "whatsapp_api": {"name": "Glow Med Spa", "domain": "glowmedspa.ae", "keyword": "med spa", "country": "AE",
@@ -61,7 +62,7 @@ def main():
         subject, body = build_message(sid, lead)
         res = pool.send_email(to_email=to, subject=subject, body_text=body, from_account_email=box, strict_sender=True)
         print("=" * 60)
-        print(f"{sid}: {'SENT' if res else 'FAILED (' + str(pool.last_failure) + ')'} from {box} to {to}  ({where})")
+        print(f"{sid}: {'SENT' if res else 'FAILED (' + str(pool.last_failure) + ')'} from {mask_email(box)} to {mask_email(to)}  ({where})")
         print(f"Subject: {subject}\n\n{body}")
     print("=" * 60)
     print("Now check where each one landed: Inbox, Promotions or Spam. On mail-tester.com, click 'Then check your score'.")
