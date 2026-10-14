@@ -175,19 +175,14 @@ SEEN_CLOSERS = [
 # can pair with any first email. No opt out sentence in the body, the footer already carries it.
 FOLLOWUPS = {
     "receptionist": [
-        "Just bringing this back up in case it got buried. How are calls handled at {name} when nobody can pick up? "
-        "Happy to talk it through.",
-        "A quick follow up on my note about phone answering. If missed calls are ever a problem, I'd be glad to hear "
-        "how things work now and share a few ideas.",
-        "One last note from me. If the phone is already covered, no worries. If not, I'm happy to have a short chat "
-        "about it.",
+        "Just bumping this up in case it got buried. Are missed calls something you deal with at {name}?",
+        "Quick follow up on my note about missed calls. Worth a look, or should I close the loop?",
+        "One last note from me. If the phone is already covered, no worries at all and I won't follow up again.",
     ],
     "whatsapp_api": [
-        "Just bringing this back up in case it got buried. How does {name} handle WhatsApp messages at the moment?",
-        "A quick follow up on my WhatsApp note. If customer chats are getting busy, I'd be glad to hear how you handle "
-        "them now and share a few ideas.",
-        "One last note from me. If WhatsApp is already sorted, no worries. If not, I'm happy to have a short chat "
-        "about it.",
+        "Just bumping this up in case it got buried. Who answers your WhatsApp chats after hours at {name}?",
+        "Quick follow up on my WhatsApp note. Worth a look, or should I close the loop?",
+        "One last note from me. If WhatsApp is already sorted, no worries at all and I won't follow up again.",
     ],
 }
 

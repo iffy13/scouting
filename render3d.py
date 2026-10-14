@@ -267,12 +267,9 @@ CLOSERS = [
 # One follow up, written to stand alone so any follow up pairs with any first email. No opt out sentence in the
 # body, the footer already carries it.
 FOLLOWUPS = [
-    "Just bringing this back up in case it got buried. Is there a project at {name} where 3D visuals would help? "
-    "Happy to hear about it.",
-    "A quick follow up on my note about 3D renders. If a client presentation is coming up, I'd be glad to talk it "
-    "through.",
-    "One last note from me. If visuals are already covered, no worries. If not, I'm happy to have a short chat about "
-    "your next project.",
+    "Just bumping this up in case it got buried. Is there a project at {name} where 3D visuals would help?",
+    "Quick follow up on my note about 3D renders. Worth a look, or should I close the loop?",
+    "One last note from me. If visuals are already covered, no worries at all and I won't follow up again.",
 ]
 
 
