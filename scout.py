@@ -249,6 +249,16 @@ async def scout_service(service_id: str, countries: List[str], keywords: List[st
                 emails = clean_emails(contact.get("emails", []), domain)[:3]
 
                 score, evidence = scorer(sig, lead, contact)
+                # Active business check: skip sites that look abandoned, favour ones updated this year or last.
+                latest = sig.get("latest_year")
+                stale_before = datetime.utcnow().year - 1
+                if latest and latest < stale_before:
+                    score, evidence = 0, [f"site looks inactive: newest year on it is {latest}, skip"]
+                elif sig.get("active_recently") and score:
+                    score = min(100, score + 10)
+                    evidence.append(f"site shows recent activity ({latest}), business is active")
+                elif not latest and score:
+                    score = max(0, score - 5)  # no year anywhere: can't tell, so slightly lower priority
                 status = "shortlisted" if score >= svc.min_score else "skipped"
                 name = clean_business_name(lead["name"], domain)
                 with get_connection() as conn:

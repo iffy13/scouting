@@ -61,7 +61,9 @@ def website_text() -> str:
 def footer() -> str:
     """Professional plain text signature: name, role, business, website, postal address, then the opt out line."""
     lines = [SENDER_NAME, f"{SENDER_TITLE}, {BUSINESS_NAME}" if SENDER_TITLE else BUSINESS_NAME]
-    if website_text():
+    # No link in cold emails by default: a URL in a first email from a new mailbox is one of the strongest spam signals.
+    # The website is still used when you reply by hand. WEBSITE_IN_EMAILS=true puts it back in the signature.
+    if website_text() and os.getenv("WEBSITE_IN_EMAILS", "").lower() in ("true", "1", "yes"):
         lines.append(website_text())
     lines.append(POSTAL_ADDRESS)
     return "\n" + "\n".join(l for l in lines if l) + "\n\nNot relevant? Reply \"stop\" and I won't email you again."
@@ -227,6 +229,28 @@ def cmd_approve(service_id: str, min_score: Optional[int], ids: Optional[List[in
     print(f"Approved {cur.rowcount} leads for {service_id}")
 
 
+async def site_looks_inactive(website: Optional[str]) -> Optional[str]:
+    """Last check before sending: open the lead's home page and look for this or last year. Returns a reason when the
+    site looks abandoned (newest year two or more years old) or is gone. None when it looks active or can't tell."""
+    if not website:
+        return None
+    import datetime as _dt
+    import requests
+    from config import DEFAULT_HEADERS
+    from scout_signals import activity
+    url = website if website.startswith(("http://", "https://")) else "https://" + website
+    try:
+        r = await asyncio.to_thread(requests.get, url, headers=DEFAULT_HEADERS, timeout=10)
+    except Exception:
+        return None  # network hiccup or a site blocking bots: can't tell, so don't throw the lead away
+    if r.status_code in (404, 410):
+        return f"website is gone (HTTP {r.status_code})"
+    latest = activity(r.text).get("latest_year")
+    if latest and latest < _dt.datetime.utcnow().year - 1:
+        return f"site looks inactive (newest year on it is {latest})"
+    return None
+
+
 async def send_blocker(lead: Dict[str, Any], verifier) -> Tuple[Optional[str], str]:
     """(reason this lead must never be sent, address) or (None, address) when it is fine to send.
     Shared by outreach.py send and send_paced.py so both apply exactly the same rules."""
@@ -247,6 +271,9 @@ async def send_blocker(lead: Dict[str, Any], verifier) -> Tuple[Optional[str], s
     if not usable:
         return "on the blacklist", emails[0]
     # Up to 3 addresses were found on the site, best first. The first one that passes the check is used.
+    stale = await site_looks_inactive(lead.get("website"))
+    if stale:
+        return stale, usable[0]
     verdicts = []
     for e in usable:
         verdict = (await verifier.verify(e)).get("verdict")

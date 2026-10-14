@@ -6,7 +6,8 @@ import re
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urljoin, urlparse
 from urllib.robotparser import RobotFileParser
-
+
+
 import render3d
 import aiohttp
 
@@ -67,7 +68,29 @@ def analyse_html(pages: Dict[str, str]) -> Dict[str, Any]:
         "has_booking": any(m in low for m in BOOKING),
         "runs_ads": any(m in low for m in ADS_PIXELS),
         "has_contact_form": "<form" in low,
+        **activity(joined),
     }
+
+
+YEAR = re.compile(r"\b(20[1-3]\d)\b")
+COPYRIGHT = re.compile(r"(?:©|&copy;|copyright)\s*(?:\d{4}\s*[-–]\s*)?(20[1-3]\d)", re.I)
+
+
+def activity(html: str) -> Dict[str, Any]:
+    """Is this business still active? Looks at the copyright year and the latest year mentioned in the visible text
+    (news, offers, "since", events). A site whose newest year is two or more years old is probably abandoned.
+
+    latest_year: newest plausible year found (None when the site shows no year at all)
+    active_recently: True when that year is this year or last year
+    """
+    from datetime import datetime
+    this_year = datetime.utcnow().year
+    text = re.sub(r"<script.*?</script>|<style.*?</style>", " ", html or "", flags=re.S | re.I)
+    text = re.sub(r"<[^>]+>", " ", text)
+    years = [int(y) for y in YEAR.findall(text) if 2010 <= int(y) <= this_year]
+    copyright_years = [int(y) for y in COPYRIGHT.findall(text) if int(y) <= this_year]
+    latest = max(copyright_years + years) if (copyright_years or years) else None
+    return {"latest_year": latest, "active_recently": bool(latest and latest >= this_year - 1)}
 
 
 def score_whatsapp(sig: Dict[str, Any], lead: Dict[str, Any], contact: Dict[str, Any]) -> Tuple[int, List[str]]:
