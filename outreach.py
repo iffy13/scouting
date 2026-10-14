@@ -145,6 +145,22 @@ def _leads(service_id: str, status: str, limit: int, ids: Optional[List[int]] = 
         return conn.execute(f"SELECT * FROM scout_leads WHERE {where} ORDER BY score DESC LIMIT ?", [*args, limit]).fetchall()
 
 
+MAILBOX_DAILY_CAP = int(os.getenv("MAILBOX_DAILY_CAP", "10"))
+
+
+def mailbox_room(box: str) -> int:
+    """How many more emails this MAILBOX may send today, counting every service that shares it and follow ups.
+    Protects a new domain when one mailbox sends for all three services (MAILBOX_DAILY_CAP, default 10)."""
+    with get_connection() as conn:
+        used = conn.execute(
+            """SELECT
+                 (SELECT COUNT(*) FROM scout_leads WHERE LOWER(sender_inbox)=? AND DATE(sent_at)=DATE('now')) +
+                 (SELECT COUNT(*) FROM scout_leads WHERE LOWER(sender_inbox)=? AND DATE(followup_sent_at)=DATE('now'))""",
+            (box.lower(), box.lower()),
+        ).fetchone()[0]
+    return max(0, MAILBOX_DAILY_CAP - used)
+
+
 def park_lead(lead_id: int, why: str):
     """Takes a lead out of the send queue for good (status 'skipped', with the reason), so it does not sit at the
     top of the queue every run and does not count toward the backlog that pauses scouting."""
@@ -183,6 +199,11 @@ def cmd_check():
             print(f"{sid:14} {mb}  TOKEN MISSING. Run: python outreach.py connect --service {sid}")
             continue
         try:
+            if acc.get("type") == "smtp":
+                from sender import smtp_mailbox
+                why = smtp_mailbox.test_login(acc["cfg"], mb)
+                print(f"{sid:14} {mb}  {'CONFIRMED (own domain, SMTP + IMAP)' if not why else why}")
+                continue
             real = acc["service"].users().getProfile(userId="me").execute().get("emailAddress", "").lower()
             state = "CONFIRMED" if real == mb else f"MISMATCH, token belongs to {real}"
         except Exception as e:
@@ -483,26 +504,40 @@ def check_replies_once() -> Dict[str, int]:
         box = next((e for e in pool.accounts if e.lower() == (r["sender_inbox"] or "").lower()), None)
         if not box:
             continue
-        try:
-            thread = pool.accounts[box]["service"].users().threads().get(
-                userId="me", id=r["gmail_thread_id"], format="metadata", metadataHeaders=["From", "Subject"]
-            ).execute()
-        except Exception as e:
-            print(f"#{r['id']}: could not read thread ({type(e).__name__})")
-            continue
-        inbound = [m for m in thread.get("messages", []) if "SENT" not in m.get("labelIds", [])]
-        if not inbound or inbound[-1]["id"] == r["last_reply_id"]:
-            continue
-        latest = inbound[-1]
-        frm = _header(latest, "From")
-        addr = parseaddr(frm)[1].lower()
-        snippet = (latest.get("snippet") or "").strip()
         lead_emails = [e.lower() for e in json.loads(r["emails_json"] or "[]")]
-        try:
-            full = pool.accounts[box]["service"].users().messages().get(userId="me", id=latest["id"], format="full").execute()
-            text = _plain_body(full.get("payload", {})) or snippet
-        except Exception:
-            text = snippet
+        acc = pool.accounts[box]
+        if acc.get("type") == "smtp":
+            from sender import smtp_mailbox
+            try:
+                found = smtp_mailbox.latest_inbound(acc["cfg"], box, r["gmail_thread_id"], lead_emails)
+            except Exception as e:
+                print(f"#{r['id']}: could not read the inbox ({type(e).__name__})")
+                continue
+            if not found or found["id"] == r["last_reply_id"]:
+                continue
+            latest = {"id": found["id"]}
+            frm, text = found["from"], found["text"]
+            snippet = re.sub(r"\s+", " ", reply_text(text))[:200]
+        else:
+            try:
+                thread = acc["service"].users().threads().get(
+                    userId="me", id=r["gmail_thread_id"], format="metadata", metadataHeaders=["From", "Subject"]
+                ).execute()
+            except Exception as e:
+                print(f"#{r['id']}: could not read thread ({type(e).__name__})")
+                continue
+            inbound = [m for m in thread.get("messages", []) if "SENT" not in m.get("labelIds", [])]
+            if not inbound or inbound[-1]["id"] == r["last_reply_id"]:
+                continue
+            latest = inbound[-1]
+            frm = _header(latest, "From")
+            snippet = (latest.get("snippet") or "").strip()
+            try:
+                full = acc["service"].users().messages().get(userId="me", id=latest["id"], format="full").execute()
+                text = _plain_body(full.get("payload", {})) or snippet
+            except Exception:
+                text = snippet
+        addr = parseaddr(frm)[1].lower()
         new_text = reply_text(text) or snippet
 
         if "mailer-daemon" in addr or "postmaster" in addr:

@@ -9,7 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-FORBIDDEN_NAMES = (".env", "credentials.json", "token.json", "mailbox_map.json")
+FORBIDDEN_NAMES = (".env", "credentials.json", "token.json", "mailbox_map.json", "smtp_accounts.json")
 PATTERNS = {
     "Google refresh token": re.compile(r'"refresh_token"\s*:\s*"'),
     "Google client secret": re.compile(r"GOCSPX-[A-Za-z0-9_-]{10,}"),

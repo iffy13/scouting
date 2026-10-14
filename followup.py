@@ -34,6 +34,8 @@ def thread_ids(pool, box, thread_id):
     """Message-ID of the first email in the thread, so the follow up lands under it in their inbox too."""
     if not thread_id:
         return None
+    if pool.accounts[box].get("type") == "smtp":
+        return thread_id  # own-domain mailboxes store the Message-ID itself
     try:
         t = pool.accounts[box]["service"].users().threads().get(
             userId="me", id=thread_id, format="metadata", metadataHeaders=["Message-ID", "Message-Id"]
@@ -46,13 +48,20 @@ def thread_ids(pool, box, thread_id):
     return None
 
 
-def has_inbound(pool, box, thread_id) -> bool:
+def has_inbound(pool, box, thread_id, lead_emails=None) -> bool:
     """True when anyone other than us wrote in this thread. Checked right before each follow up, so a reply that
     arrived since the last reply check still stops it. When the thread cannot be read, no follow up is sent."""
     if not thread_id:
         return False
+    acc = pool.accounts[box]
+    if acc.get("type") == "smtp":
+        from sender import smtp_mailbox
+        try:
+            return smtp_mailbox.latest_inbound(acc["cfg"], box, thread_id, lead_emails or []) is not None
+        except Exception:
+            return True
     try:
-        t = pool.accounts[box]["service"].users().threads().get(userId="me", id=thread_id, format="minimal").execute()
+        t = acc["service"].users().threads().get(userId="me", id=thread_id, format="minimal").execute()
     except Exception:
         return True
     return any("SENT" not in m.get("labelIds", []) for m in t.get("messages", []))
@@ -114,14 +123,15 @@ def cmd_send(service_id, days, limit, lo, hi, auto, countries=None):
                     or is_domain_blacklisted(lead.get("domain"), conn)):
                 continue
             eligible.append((lead, (lead.get("sent_to") or emails[0]).lower()))  # the address the first email went to
-    eligible = eligible[:limit]
+    from outreach import mailbox_room
+    eligible = eligible[:min(limit, mailbox_room(box))]
     if not eligible:
         print("No leads are ready for a follow up yet.")
         return
     sent = 0
     try:
         for i, (lead, to) in enumerate(eligible):
-            if has_inbound(pool, box, lead.get("gmail_thread_id")):
+            if has_inbound(pool, box, lead.get("gmail_thread_id"), [e.lower() for e in json.loads(lead.get("emails_json") or "[]")]):
                 print(f"#{lead['id']} {lead['name']}: they wrote back (or the thread could not be read). No follow up.")
                 continue
             subject, body = build_followup(service_id, lead)

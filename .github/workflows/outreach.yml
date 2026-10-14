@@ -53,10 +53,12 @@ jobs:
       BOUNCE_LIMIT_PCT: ${{ vars.BOUNCE_LIMIT_PCT || '8' }}
       BOUNCE_RESET_AT: ${{ vars.BOUNCE_RESET_AT }}
       MAILBOX_MAP_JSON: ${{ secrets.MAILBOX_MAP_JSON }}
+      SMTP_ACCOUNTS_JSON: ${{ secrets.SMTP_ACCOUNTS_JSON }}
       ACCOUNT_WHATSAPP_JSON: ${{ secrets.ACCOUNT_WHATSAPP_JSON }}
       ACCOUNT_RECEPTIONIST_JSON: ${{ secrets.ACCOUNT_RECEPTIONIST_JSON }}
       ACCOUNT_BOOKS_JSON: ${{ secrets.ACCOUNT_BOOKS_JSON }}
       SCOUT_DAILY_CAP: ${{ vars.SCOUT_DAILY_CAP || '30' }}
+      MAILBOX_DAILY_CAP: ${{ vars.MAILBOX_DAILY_CAP || '10' }}
       OUTREACH_PAUSED: ${{ vars.OUTREACH_PAUSED || 'false' }}
       # Each send run scouts first when its queue is running low (fewer than SCOUT_BACKLOG_MAX approved leads
       # waiting), then sends. A full queue skips scouting, so no Serper credits are spent for nothing.

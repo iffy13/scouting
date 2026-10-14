@@ -79,6 +79,19 @@ class MultiGmailService:
                 except Exception as e:
                     logger.warning(f"Could not load account {mask_email(acc_path.stem)}: {type(e).__name__}")
 
+        # Mailboxes on your own domain (SMTP + IMAP). They win over a Gmail token with the same address.
+        from sender import smtp_mailbox
+        try:
+            smtp_accounts = smtp_mailbox.load_accounts()
+        except Exception as e:
+            smtp_accounts = {}
+            logger.warning(f"SMTP_ACCOUNTS_JSON could not be read: {type(e).__name__}")
+        for email_addr, cfg in smtp_accounts.items():
+            if email_addr in [d.strip().lower() for d in DISABLED_INBOXES]:
+                continue
+            self.accounts[email_addr] = {"type": "smtp", "email": email_addr, "cfg": cfg}
+            logger.info(f"Loaded own-domain mailbox: {mask_email(email_addr)}")
+
     def get_account_sent_today_count(self, account_email: str) -> int:
         """Returns how many emails this specific inbox has sent today."""
         try:
@@ -129,6 +142,8 @@ class MultiGmailService:
             self.last_failure = "no_capacity"
             return None
         acc = self.accounts[from_account_email]
+        if acc.get("type") == "smtp":
+            return self._send_smtp(acc, to_email, subject, body_text, in_reply_to)
 
         service = acc["service"]
         sender_email = acc["email"]
@@ -170,6 +185,24 @@ class MultiGmailService:
             logger.error(f"Failed to send email to {mask_email(to_email)}: {mask_emails_in(str(e))[:200]}")
             self.last_failure = "rejected"
             return None
+
+    def _send_smtp(self, acc, to_email, subject, body_text, in_reply_to):
+        from sender import smtp_mailbox
+        self.last_failure = None
+        try:
+            msg_id = smtp_mailbox.send(acc["cfg"], acc["email"], SENDER_NAME, to_email, subject, body_text, in_reply_to)
+        except smtp_mailbox.SendLimited as e:
+            self.throttled_inboxes.add(acc["email"])
+            logger.warning(f"[MAILBOX PAUSED] {mask_email(acc['email'])}: {e}. Stopping this run.")
+            self.last_failure = "no_capacity"
+            return None
+        except Exception as e:
+            logger.error(f"Failed to send email to {mask_email(to_email)}: {mask_emails_in(str(e))[:200]}")
+            self.last_failure = "rejected"
+            return None
+        logger.info(f"Dispatched email to {mask_email(to_email)} via [{mask_email(acc['email'])}]")
+        # For own-domain mailboxes the thread id IS the Message-ID: replies and bounces are matched on it.
+        return {"message_id": msg_id, "thread_id": msg_id, "from_email": acc["email"]}
 
     def check_all_inboxes_for_replies(self) -> List[Dict[str, Any]]:
         """Scans all connected inboxes for replies and bounces with strict filtering."""

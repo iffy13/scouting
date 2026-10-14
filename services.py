@@ -131,6 +131,6 @@ def validate_mailbox_map() -> List[str]:
             problems.append(f"{sid}: no mailbox assigned in mailbox_map.json")
             continue
         if mb in seen:
-            problems.append(f"{sid}: mailbox {mb} is already used by {seen[mb]}")
+            problems.append(f"{sid}: shares {mb} with {seen[mb]} (fine; MAILBOX_DAILY_CAP limits the total)")
         seen[mb] = sid
     return problems
