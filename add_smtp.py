@@ -35,8 +35,12 @@ def gh_secret(name: str, value: str) -> bool:
 
 def main():
     accounts = json.loads(FILE.read_text("utf-8")) if FILE.exists() else {}
-    addr = input("Email address (e.g. samuel@iffystudio.site): ").strip().lower()
-    host = input("Mail server from 'Connect Devices' (e.g. server123.web-hosting.com): ").strip()
+    addr = ""
+    while "@" not in addr:
+        addr = input("Email address (type it, e.g. samuel@iffystudio.site): ").strip().lower()
+    host = ""
+    while "." not in host:
+        host = input("Mail server from 'Connect Devices' (e.g. server123.web-hosting.com): ").strip()
     smtp_port = int(input("SMTP port [465]: ").strip() or 465)
     imap_port = int(input("IMAP port [993]: ").strip() or 993)
     password = getpass.getpass("Mailbox password (hidden while you type): ")
@@ -44,10 +48,17 @@ def main():
 
     print("Testing login...")
     why = smtp_mailbox.test_login(cfg, addr)
-    if why:
+    if why and ("Timeout" in why or "timed out" in why.lower() or "10060" in why):
+        print(f"{why}\nYour PC could not reach the mail server at all. Often the internet provider blocks mail ports;"
+              "\nGitHub's servers usually can. If the server name is right, you can save it and test from GitHub with:"
+              "\n  gh workflow run outreach.yml -f service=receptionist -f dry_run=true")
+        if input("Save anyway? (y/n): ").strip().lower() != "y":
+            return
+    elif why:
         print(f"Not saved: {why}\nCheck the server name, ports and password in cPanel > Email Accounts > Connect Devices.")
         return
-    print("SMTP and IMAP both work.")
+    else:
+        print("SMTP and IMAP both work.")
     accounts[addr] = cfg
     FILE.write_text(json.dumps(accounts, indent=2), "utf-8")
     print(f"Saved in {FILE} (this file stays on your PC).")

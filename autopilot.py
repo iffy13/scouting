@@ -80,6 +80,13 @@ def mailbox_ready(service_id: str):
 
     pool = MultiGmailService(mode="all")
     if any(e.lower() == mb for e in pool.accounts):
+        acc = pool.accounts.get(mb) or next(a for e, a in pool.accounts.items() if e.lower() == mb)
+        if acc.get("type") == "smtp":
+            from sender import smtp_mailbox
+            why = smtp_mailbox.test_login(acc["cfg"], mb)
+            if why:
+                return False, f"{mb} (own domain): {why}"
+            log(f"own-domain mailbox login OK (SMTP and IMAP)")
         return True, mb
     return False, f"{mb} could not be loaded (token missing, expired or revoked)"
 
