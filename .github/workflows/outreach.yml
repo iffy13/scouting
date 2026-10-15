@@ -68,6 +68,9 @@ jobs:
       SERPER_MAX_QUERIES: ${{ vars.SERPER_MAX_QUERIES || '6' }}
       AP_SEND_LIMIT: ${{ vars.AP_SEND_LIMIT || '10' }}  # 3 runs per service x 10 = 30 a day per mailbox
       AP_FOLLOWUP_LIMIT: ${{ vars.AP_FOLLOWUP_LIMIT || '4' }}
+      # Minutes between two emails, picked at random in this range so sending looks human, not like a burst.
+      AP_MIN_GAP: ${{ vars.AP_MIN_GAP || '5' }}
+      AP_MAX_GAP: ${{ vars.AP_MAX_GAP || '10' }}
       DEMO_LINK: ${{ vars.DEMO_LINK }}
       DATA_REMOTE: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
     steps:
