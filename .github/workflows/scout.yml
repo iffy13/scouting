@@ -24,7 +24,7 @@ jobs:
       group: outreach-data
       cancel-in-progress: false
     outputs:
-      fallback: ${{ steps.wa.outputs.fallback || steps.rc.outputs.fallback || steps.r3d.outputs.fallback }}
+      fallback: ${{ steps.wa.outputs.fallback || steps.rc.outputs.fallback || steps.r3d.outputs.fallback || steps.lg.outputs.fallback }}
     env:
       BUSINESS_NAME: ${{ secrets.BUSINESS_NAME }}
       POSTAL_ADDRESS: ${{ secrets.POSTAL_ADDRESS }}
@@ -68,6 +68,10 @@ jobs:
         id: r3d
         if: ${{ !cancelled() && steps.restore.outcome == 'success' }}
         run: python autopilot.py --service render_3d --scout-only
+      - name: Scout lead_gen
+        id: lg
+        if: ${{ !cancelled() && steps.restore.outcome == 'success' }}
+        run: python autopilot.py --service lead_gen --scout-only
       - name: Save database
         if: always()
         run: bash ci/data_sync.sh save
@@ -109,6 +113,9 @@ jobs:
       - name: Scout render_3d
         if: ${{ !cancelled() }}
         run: python autopilot.py --service render_3d --scout-only
+      - name: Scout lead_gen
+        if: ${{ !cancelled() }}
+        run: python autopilot.py --service lead_gen --scout-only
       - name: Export new leads (locked, artifacts of a public repo can be downloaded by anyone)
         if: ${{ !cancelled() }}
         run: |

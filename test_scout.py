@@ -18,7 +18,7 @@ def test_unreachable():
 
 def test_registry():
     assert get_service("whatsapp_api").keywords
-    assert set(SERVICES) == {"whatsapp_api", "receptionist", "render_3d", "book_trailer"}
+    assert set(SERVICES) == {"whatsapp_api", "receptionist", "render_3d", "lead_gen", "book_trailer"}
 
 if __name__ == "__main__":
     for n, f in list(globals().items()):

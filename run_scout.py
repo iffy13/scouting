@@ -16,7 +16,8 @@ import tg
 JOBS = {
     "whatsapp_api": ["--countries", "AE,SA,QA,KW,BH,OM,SG,MY"],
     "receptionist": ["--countries", "US,CA,AU,NZ"],
-    "render_3d": ["--countries", "US,CA,AU,NZ,AE,SA,QA,KW,BH,OM,SG,MY,ZA"],
+    "render_3d": ["--countries", "US,CA,AU,NZ,AE,SA,QA,KW,BH,OM,SG,MY"],
+    "lead_gen": ["--countries", "US,CA,AU,NZ,AE,SA,QA,KW,BH,OM,SG,MY,HK,PH,IN,NG,GH,KE"],
 }
 
 

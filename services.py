@@ -14,6 +14,7 @@ from dataclasses import dataclass, field, replace
 from typing import Dict, List, Optional
 
 from config import BASE_DIR
+import leadgen
 import render3d
 
 MAILBOX_MAP_FILE = BASE_DIR / "mailbox_map.json"
@@ -88,6 +89,15 @@ SERVICES: Dict[str, Service] = {
         countries=render3d.COUNTRIES,
         min_score=render3d.MIN_SCORE,
     ),
+    "lead_gen": Service(
+        id="lead_gen",
+        label=leadgen.LABEL,
+        business_type="local",
+        description=leadgen.DESCRIPTION,
+        keywords=leadgen.KEYWORDS,
+        countries=leadgen.COUNTRIES,
+        min_score=leadgen.MIN_SCORE,
+    ),
     # The third mailbox moved to render_3d. Kept for the local author_engine code; it has no mailbox now.
     "book_trailer": Service(
         id="book_trailer",
@@ -102,12 +112,21 @@ SERVICES: Dict[str, Service] = {
 
 
 def load_mailbox_map() -> Dict[str, str]:
+    """service -> mailbox. When every service in the map uses the SAME mailbox, a new service that is not in the
+    map yet (lead_gen) uses it too, so adding a service does not need a new GitHub secret."""
+    mapping: Dict[str, str] = {}
     if MAILBOX_MAP_FILE.exists():
         try:
-            return {k: v.strip().lower() for k, v in json.loads(MAILBOX_MAP_FILE.read_text("utf-8")).items() if v}
+            mapping = {k: v.strip().lower() for k, v in json.loads(MAILBOX_MAP_FILE.read_text("utf-8")).items() if v}
         except Exception:
             return {}
-    return {}
+    boxes = set(mapping.values())
+    if len(boxes) == 1:
+        only = next(iter(boxes))
+        for sid, svc in SERVICES.items():
+            if svc.engine == "scout":
+                mapping.setdefault(sid, only)
+    return mapping
 
 
 def get_service(service_id: str) -> Service:

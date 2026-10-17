@@ -21,7 +21,7 @@ from scout import init_scout_tables
 from services import SERVICES, get_service, load_mailbox_map
 
 # Copy lives in messages_variants.py (FOLLOWUPS). Kept as the list of services that have a follow up.
-BODIES = {"whatsapp_api": None, "receptionist": None, "render_3d": None}
+BODIES = {"whatsapp_api": None, "receptionist": None, "render_3d": None, "lead_gen": None}
 SAMPLE = {"name": "Sample Dental Clinic", "domain": "sample.com", "owner_name": None}
 
 

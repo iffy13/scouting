@@ -16,12 +16,15 @@ on:
     - cron: "7 14 * * 1-5"   # Receptionist: US and Canada 09:07 Eastern
     - cron: "41 18 * * 1-5"  # Receptionist: US and Canada 13:41 Eastern
     - cron: "7 22 * * 0-4"   # Receptionist: Australia 08:07, New Zealand 10:07 (their Monday to Friday)
+    - cron: "23 4 * * 1-5"   # Lead lists: Asia and Australia (SG/MY/PH/HK 12:23, India 09:53, AU 14:23, NZ 16:23)
+    - cron: "23 12 * * 0-5"  # Lead lists: Gulf 15:23-16:23, Nigeria 13:23, Ghana 12:23, Kenya 15:23
+    - cron: "3 16 * * 1-5"   # Lead lists: US and Canada 11:03 Eastern
   workflow_dispatch:
     inputs:
       service:
         description: "Which service to run"
         type: choice
-        options: [whatsapp_api, receptionist, render_3d]
+        options: [whatsapp_api, receptionist, render_3d, lead_gen]
         default: whatsapp_api
       dry_run:
         description: "Show the plan only, do nothing"
@@ -95,6 +98,7 @@ jobs:
             case "${{ github.event.schedule }}" in
               "7 14 * * 1-5"|"41 18 * * 1-5"|"7 22 * * 0-4") s=receptionist ;;
               "7 8 * * 0-5"|"7 20 * * 1-5"|"37 23 * * 0-4") s=render_3d ;;
+              "23 4 * * 1-5"|"23 12 * * 0-5"|"3 16 * * 1-5") s=lead_gen ;;
               *) s=whatsapp_api ;;
             esac
           fi

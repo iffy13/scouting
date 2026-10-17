@@ -8,6 +8,7 @@ from urllib.parse import urljoin, urlparse
 from urllib.robotparser import RobotFileParser
 
 
+import leadgen
 import render3d
 import aiohttp
 
@@ -147,7 +148,8 @@ def score_receptionist(sig: Dict[str, Any], lead: Dict[str, Any], contact: Dict[
     return min(score, 100), ev
 
 
-SCORERS = {"whatsapp_api": score_whatsapp, "receptionist": score_receptionist, "render_3d": render3d.score_render3d}
+SCORERS = {"whatsapp_api": score_whatsapp, "receptionist": score_receptionist, "render_3d": render3d.score_render3d,
+           "lead_gen": leadgen.score_leadgen}
 
 
 async def inspect_site(session: aiohttp.ClientSession, website: str, sem: asyncio.Semaphore) -> Optional[Dict[str, Any]]:
@@ -164,5 +166,6 @@ async def inspect_site(session: aiohttp.ClientSession, website: str, sem: asynci
                 pages[path] = html
         sig = analyse_html(pages)
         sig.update(render3d.analyse_html_render3d(pages))
+        sig.update(leadgen.analyse_html_leadgen(pages))
         sig["pages_fetched"] = list(pages.keys())
         return sig

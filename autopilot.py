@@ -23,6 +23,7 @@ import sys
 import time
 from pathlib import Path
 
+import leadgen
 import render3d
 import tg
 from safety import mask_email, mask_emails_in, open_countries
@@ -32,6 +33,7 @@ COUNTRIES = {
     "whatsapp_api": ["AE", "SA", "QA", "KW", "BH", "OM", "SG", "MY"],
     "receptionist": ["US", "CA", "AU", "NZ"],
     "render_3d": render3d.COUNTRIES,
+    "lead_gen": leadgen.COUNTRIES,
 }
 TOKEN_SECRETS = {
     "whatsapp_api": "ACCOUNT_WHATSAPP_JSON",
@@ -391,7 +393,7 @@ def main():
             tg.send(f"<b>Reply check</b>\n{tg.esc(line)}")
         return
     if not a.service:
-        sys.exit("Use --service whatsapp_api or --service receptionist, or --replies-only.")
+        sys.exit(f"Use --service with one of {', '.join(COUNTRIES)}, or --replies-only.")
     if a.scout_only:
         scout_only(a.service, a.scout_max)
         return

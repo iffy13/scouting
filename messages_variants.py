@@ -25,7 +25,7 @@ UNUSABLE_NAME = "your business"
 
 # Markets where a first name is the normal way to greet a stranger. Elsewhere a plain "Hello," is safer than
 # guessing which part of a name is the given name.
-GIVEN_NAME_FIRST = {"US", "CA", "AU", "NZ", "UK", "IE"}
+GIVEN_NAME_FIRST = {"US", "CA", "AU", "NZ", "UK", "IE", "NG", "GH", "KE", "SG", "PH"}
 ROLE_WORDS = {"admin", "info", "sales", "team", "manager", "owner", "office", "support", "contact", "hello", "mail",
               "enquiries", "inquiries", "reception", "booking", "bookings", "service", "services"}
 HONORIFICS = {"dr", "mr", "mrs", "ms", "miss", "prof", "eng", "sheikh", "capt", "sir"}

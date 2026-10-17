@@ -21,7 +21,7 @@ from sender import smtp_mailbox
 
 FILE = smtp_mailbox.LOCAL_FILE
 MAP = Path("mailbox_map.json")
-SERVICES = ["whatsapp_api", "receptionist", "render_3d"]
+SERVICES = ["whatsapp_api", "receptionist", "render_3d", "lead_gen"]
 
 
 def gh_secret(name: str, value: str) -> bool:
@@ -84,7 +84,7 @@ def main():
     print("\nWhich service should send from this mailbox?")
     for i, s in enumerate(SERVICES, 1):
         print(f"  {i}. {s}")
-    print(f"  {len(SERVICES) + 1}. all three (one mailbox for everything)")
+    print(f"  {len(SERVICES) + 1}. all of them (one mailbox for everything)")
     pick = input("Number (Enter to skip): ").strip()
     chosen = []
     if pick.isdigit() and 1 <= int(pick) <= len(SERVICES):

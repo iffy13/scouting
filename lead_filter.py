@@ -93,6 +93,12 @@ def junk_reason(name: Optional[str], domain: Optional[str], website: Optional[st
 def service_junk_reason(service_id: str, name: Optional[str], domain: Optional[str], website: Optional[str] = None) -> Optional[str]:
     """junk_reason plus the extra rules of one service (render_3d also skips render studios and software)."""
     why = junk_reason(name, domain, website)
+    if service_id == "lead_gen":
+        # agencies and web designers are BUYERS of lead lists, so the "sells websites" rule does not apply here
+        if why and why != "sells websites or software, not a buyer":
+            return why
+        import leadgen
+        return leadgen.leadgen_junk_reason(name, domain)
     if why or service_id != "render_3d":
         return why
     import render3d

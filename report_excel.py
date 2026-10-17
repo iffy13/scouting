@@ -26,8 +26,8 @@ from services import SERVICES, load_mailbox_map
 
 LOCAL_OFFSET = timedelta(hours=1)  # Lagos time, UTC+1 all year
 LOCAL_LABEL = "Lagos time"
-SERVICES_SHOWN = ["whatsapp_api", "receptionist", "render_3d"]
-SHORT = {"whatsapp_api": "WhatsApp", "receptionist": "Receptionist", "render_3d": "3D renders"}
+SERVICES_SHOWN = ["whatsapp_api", "receptionist", "render_3d", "lead_gen"]
+SHORT = {"whatsapp_api": "WhatsApp", "receptionist": "Receptionist", "render_3d": "3D renders", "lead_gen": "Lead lists"}
 
 HEADER_FILL = PatternFill("solid", fgColor="1F3A5F")
 HEADER_FONT = Font(bold=True, color="FFFFFF")

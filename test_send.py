@@ -24,6 +24,8 @@ SAMPLE = {
                      "evidence_json": json.dumps(["uses a WhatsApp click to chat link (manual WhatsApp today)"])},
     "receptionist": {"name": "Bright Plumbing", "domain": "brightplumbing.com", "keyword": "emergency plumber",
                      "country": "US", "evidence_json": json.dumps(["pays for traffic, missed calls cost real money"])},
+    "lead_gen": {"name": "Harbor Digital", "domain": "harbordigital.com", "keyword": "marketing agency", "country": "US",
+                 "evidence_json": json.dumps(["pays for ads to win clients"])},
     "render_3d": {"name": "Palm Villas", "domain": "palmvillas.ae", "keyword": "villa developer", "country": "AE",
                   "evidence_json": json.dumps(["mentions upcoming, proposed or under construction work"])},
 }

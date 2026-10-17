@@ -90,6 +90,15 @@ def clean_service_name(raw_service: str) -> Optional[str]:
         
     return raw_service.strip()
 
+# Scouting for lead_gen targets every market, so scout.py switches the market ban off while it runs.
+ALLOW_ALL_MARKETS = False
+
+
+def allow_all_markets(on: bool):
+    global ALLOW_ALL_MARKETS
+    ALLOW_ALL_MARKETS = bool(on)
+
+
 def is_valid_prospect_domain(domain: Optional[str], website: Optional[str]) -> bool:
     """
     Ensures we NEVER email:
@@ -104,11 +113,11 @@ def is_valid_prospect_domain(domain: Optional[str], website: Optional[str]) -> b
     website_clean = (website or "").lower()
 
     # 1. Reject Banned TLDs
-    if domain_clean.endswith(BANNED_TLDS):
+    if not ALLOW_ALL_MARKETS and domain_clean.endswith(BANNED_TLDS):
         return False
 
     # 2. Reject Banned Location URLs
-    if any(banned_loc in website_clean for banned_loc in BANNED_LOCATION_WORDS):
+    if not ALLOW_ALL_MARKETS and any(banned_loc in website_clean for banned_loc in BANNED_LOCATION_WORDS):
         return False
 
     # 3. Reject Mega Platforms and Aggregators

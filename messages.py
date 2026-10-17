@@ -94,9 +94,14 @@ def compose(service_id: str, lead: Dict[str, Any], footer_text: str) -> Optional
     """First email: a pain point hook built from what the scout found on the lead's site (pitch.py), what changes
     for them, and one easy question. The same lead always gets the same email (seeded by its domain)."""
     import pitch
-    if service_id not in ("whatsapp_api", "receptionist", "render_3d"):
+    if service_id not in ("whatsapp_api", "receptionist", "render_3d", "lead_gen"):
         return None
     name = display_name(lead.get("name")) or UNUSABLE_NAME
+    if service_id == "lead_gen":
+        import leadgen
+        niche = leadgen.detect_niche(lead.get("keyword"), lead.get("name"), lead.get("domain"))
+        subject, body = leadgen.build_first(niche, name, lead.get("owner_name"), lead.get("country"), _seed(lead))
+        return subject, _team_hello(body, name) + "\n\n" + footer_text.lstrip("\n")
     evidence = " | ".join(json.loads(lead.get("evidence_json") or "[]"))
     if service_id == "render_3d":
         import render3d
@@ -122,6 +127,10 @@ def compose_followup(service_id: str, lead: Dict[str, Any], footer_text: str) ->
         composed = compose(service_id, lead, footer_text)
         first_subject = composed[0] if composed else (lead.get("name") or UNUSABLE_NAME)
     name = display_name(lead.get("name")) or UNUSABLE_NAME
+    if service_id == "lead_gen":
+        import leadgen
+        subject, body = leadgen.build_followup(name, lead.get("owner_name"), lead.get("country"), _seed(lead), first_subject)
+        return subject, _team_hello(body, name) + "\n\n" + footer_text.lstrip("\n")
     if service_id == "render_3d":
         import render3d
         subject, body = render3d.build_followup(name, lead.get("owner_name"), lead.get("country"), _seed(lead), first_subject)

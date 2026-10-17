@@ -152,6 +152,15 @@ def use_serper() -> bool:
 
 async def scout_service(service_id: str, countries: List[str], keywords: List[str], max_new: int) -> Dict[str, Any]:
     """Returns {"added": n, "blocked": reason}. blocked is "" when the search source worked."""
+    from offers import cleaner
+    cleaner.allow_all_markets(service_id == "lead_gen")  # lead_gen scouts every market, the others keep the ban
+    try:
+        return await _scout_service(service_id, countries, keywords, max_new)
+    finally:
+        cleaner.allow_all_markets(False)
+
+
+async def _scout_service(service_id: str, countries: List[str], keywords: List[str], max_new: int) -> Dict[str, Any]:
     svc = get_service(service_id)
     if svc.engine != "scout":
         logger.info(f"{svc.id} is handled by {svc.engine}, nothing to scout here.")
