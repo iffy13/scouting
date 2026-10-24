@@ -218,12 +218,12 @@ SUBJECTS: Dict[str, List[str]] = {
 }
 OPENERS: Dict[str, List[str]] = {
     "agency": [
-        "Most agencies I speak with say new clients come in waves: referrals one month, nothing the next.",
+        "For a lot of agencies, new clients come in waves: referrals one month, nothing the next.",
         "When referrals slow down, where do new clients for {name} come from?",
         "How much of your week goes into finding new clients instead of doing client work?",
     ],
     "coach": [
-        "Most coaches I speak with are great at the work and short on time to find the next client.",
+        "Most coaches are great at the work and short on time to find the next client.",
         "When referrals slow down, where do new clients for {name} come from?",
         "How much of your week goes into finding new clients?",
     ],
