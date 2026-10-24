@@ -30,6 +30,7 @@ from scrapers.direct_web import DirectWebScraper
 from scrapers.multi_platform import MultiPlatformScraper
 from scrapers.serper import SerperScraper, SerperUnavailable
 from scrapers.google_places import GooglePlacesScraper, maps_fit
+from scrapers.osm_leads import OSMLeadScraper
 from services import SERVICES, get_service, validate_mailbox_map
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -167,6 +168,11 @@ def use_places() -> bool:
     return bool(os.getenv("GOOGLE_PLACES_API_KEY")) and os.getenv("SCOUT_SOURCE", "").lower() != "web"
 
 
+def use_osm() -> bool:
+    """OpenStreetMap (free, no key) is on by default. OSM_SOURCE=off or SCOUT_SOURCE=web turns it off."""
+    return os.getenv("OSM_SOURCE", "on").lower() != "off" and os.getenv("SCOUT_SOURCE", "").lower() != "web"
+
+
 def use_serper() -> bool:
     """Serper is used when SERPER_API_KEY is set, unless SCOUT_SOURCE=web forces the free web search."""
     return bool(os.getenv("SERPER_API_KEY")) and os.getenv("SCOUT_SOURCE", "").lower() != "web"
@@ -204,15 +210,20 @@ async def _scout_service(service_id: str, countries: List[str], keywords: List[s
     places = GooglePlacesScraper(get_count=_places_count, add_count=_places_add) if use_places() else None
     if places:
         logger.info(f"Search source: Google Maps (Places API), {places.calls_left_today()} calls left today")
+    osm = OSMLeadScraper() if use_osm() else None
+    if osm:
+        logger.info(f"Search source: OpenStreetMap, free (up to {osm.max_queries} queries)")
     serper = SerperScraper() if use_serper() else None
     serper_max = int(os.getenv("SERPER_MAX_QUERIES") or 16)
+    web_ok = False
     if serper:
         logger.info(f"Search source: Serper API (up to {serper_max} queries)")
-    elif not places:
+    elif not places and not osm:
         reason = await search_engine_check()
         if reason:
             _blocked_note(svc.id, reason)
             return {"added": 0, "blocked": reason}
+        web_ok = True
         logger.info("Search source: DuckDuckGo web search")
     blocked = ""
     direct = DirectWebScraper()
@@ -238,19 +249,24 @@ async def _scout_service(service_id: str, countries: List[str], keywords: List[s
                     leads = await places.search(kw, ctry, limit=20)
                 except Exception as e:
                     logger.warning(f"Google Maps search failed: {str(e)[:150]}")
+            if not leads and osm and not osm.exhausted:
+                leads = await osm.search(kw, ctry, limit=20)
             if leads:
-                pass  # Google Maps answered, no Serper credit or web search needed for this pair
-            elif places and not serper and places.calls_left_today() <= 0:
-                break  # Maps budget used up for today and no other cloud source
-            elif serper:
-                if serper.queries >= serper_max:
-                    break
+                pass  # a map source answered, no Serper credit or web search needed for this pair
+            elif serper and serper.queries < serper_max:
                 try:
                     leads = await serper.search(kw, ctry, limit=10)
                 except SerperUnavailable as e:
-                    blocked = f"{e}. The free credits are probably used up"
-                    _blocked_note(svc.id, blocked, tell=_serper_note_due())
-                    break
+                    note = f"{e}. The free credits are probably used up"
+                    if not (osm and not osm.exhausted):
+                        blocked = note
+                        _blocked_note(svc.id, blocked, tell=_serper_note_due())
+                        break
+                    logger.info(f"Serper stopped ({note}), carrying on with OpenStreetMap")
+                    serper = None
+            elif not web_ok:
+                if not (osm and not osm.exhausted) and not (places and places.calls_left_today() > 0):
+                    break  # every source used up for this run
             else:
                 await asyncio.sleep(random.uniform(4, 8))
                 res = await asyncio.gather(
@@ -294,7 +310,7 @@ async def _scout_service(service_id: str, countries: List[str], keywords: List[s
                     contact = {}
                 # A Google Maps phone helps the score but is not stored (Google's terms), so lead["phone"] stays empty.
                 contact["phone"] = lead.get("phone") or (lead.get("maps") or {}).get("phone")
-                emails = clean_emails(contact.get("emails", []), domain)[:3]
+                emails = clean_emails(list(contact.get("emails") or []) + [e for e in [lead.get("direct_email")] if e], domain)[:3]
 
                 score_lead = {**lead, "phone": contact["phone"]}
                 score, evidence = scorer(sig, score_lead, contact)
@@ -327,7 +343,7 @@ async def _scout_service(service_id: str, countries: List[str], keywords: List[s
                     conn.commit()
                 added += 1
                 logger.info(f"  {name} ({domain}) score {score} -> {status}")
-            if added >= max_new or blocked or (serper and serper.queries >= serper_max):
+            if added >= max_new or blocked:
                 break
     logger.info(f"Scouted {added} new businesses for {svc.id}")
     try:

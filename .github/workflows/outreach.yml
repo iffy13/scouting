@@ -70,6 +70,7 @@ jobs:
       SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
       GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
       PLACES_DAILY_CALLS: ${{ vars.PLACES_DAILY_CALLS || '30' }}
+      OSM_MAX_QUERIES: ${{ vars.OSM_MAX_QUERIES || '6' }}
       SERPER_MAX_QUERIES: ${{ vars.SERPER_MAX_QUERIES || '6' }}
       AP_SEND_LIMIT: ${{ vars.AP_SEND_LIMIT || '10' }}  # 3 runs per service x 10 = 30 a day per mailbox
       AP_FOLLOWUP_LIMIT: ${{ vars.AP_FOLLOWUP_LIMIT || '4' }}
