@@ -23,6 +23,7 @@ For Telegram alerts also add:
 """
 import argparse
 import asyncio
+import datetime
 import json
 import os
 import re
@@ -146,11 +147,37 @@ def _leads(service_id: str, status: str, limit: int, ids: Optional[List[int]] = 
 
 
 MAILBOX_DAILY_CAP = int(os.getenv("MAILBOX_DAILY_CAP", "10"))
+# Warm-up for a new sending mailbox: the most it may send per day in its 1st, 2nd, 3rd... week, counted from its
+# first email. A brand-new domain that sends 50 a day lands in spam, so this applies even when MAILBOX_DAILY_CAP is
+# set higher. WARMUP_STEPS="" switches it off.
+WARMUP_STEPS = [int(x) for x in os.getenv("WARMUP_STEPS", "10,15,20,25,30").split(",") if x.strip().isdigit()]
+
+
+def warmup_cap(first_sent: Optional[str], today: Optional[datetime.date] = None) -> Optional[int]:
+    """The warm-up limit for a mailbox whose first email went out on `first_sent` (YYYY-MM-DD...), or None after
+    the last step or when warm-up is off. A mailbox that never sent is in week 1."""
+    if not WARMUP_STEPS:
+        return None
+    today = today or datetime.date.today()
+    try:
+        start = datetime.date.fromisoformat(str(first_sent)[:10]) if first_sent else today
+    except ValueError:
+        start = today
+    week = max(0, (today - start).days) // 7
+    return WARMUP_STEPS[week] if week < len(WARMUP_STEPS) else None
+
+
+def mailbox_cap(box: str) -> int:
+    """Today's limit for this mailbox: MAILBOX_DAILY_CAP, lowered by the warm-up while the mailbox is new."""
+    with get_connection() as conn:
+        first = conn.execute("SELECT MIN(sent_at) FROM scout_leads WHERE LOWER(sender_inbox)=?", (box.lower(),)).fetchone()[0]
+    w = warmup_cap(first)
+    return MAILBOX_DAILY_CAP if w is None else min(MAILBOX_DAILY_CAP, w)
 
 
 def mailbox_room(box: str) -> int:
     """How many more emails this MAILBOX may send today, counting every service that shares it and follow ups.
-    Protects a new domain when one mailbox sends for all three services (MAILBOX_DAILY_CAP, default 10)."""
+    Protects a new domain when one mailbox sends for all services (MAILBOX_DAILY_CAP plus the warm-up)."""
     with get_connection() as conn:
         used = conn.execute(
             """SELECT
@@ -158,7 +185,7 @@ def mailbox_room(box: str) -> int:
                  (SELECT COUNT(*) FROM scout_leads WHERE LOWER(sender_inbox)=? AND DATE(followup_sent_at)=DATE('now'))""",
             (box.lower(), box.lower()),
         ).fetchone()[0]
-    return max(0, MAILBOX_DAILY_CAP - used)
+    return max(0, mailbox_cap(box) - used)
 
 
 def park_lead(lead_id: int, why: str):
