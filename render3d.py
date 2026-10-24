@@ -29,7 +29,7 @@ MIN_SCORE = 40
 
 # Markets that are scouted AND emailed. Markets in CAREFUL_REGIONS (UK, IE, EU) are not in this list on purpose:
 # the existing rule keeps them out of auto approval, so scouting them would only burn search credits.
-COUNTRIES = ["US", "CA", "AU", "NZ", "AE", "SA", "QA", "KW", "BH", "OM", "SG", "MY"]  # ZA removed: POPIA needs consent
+COUNTRIES = ["US", "CA", "AU", "NZ", "AE", "SA", "QA", "KW", "BH", "OM", "SG", "MY", "MX", "BR", "CO", "CL"]  # ZA removed: POPIA needs consent
 
 # keyword -> niche key. Keywords are what gets searched, the niche decides the subject and wording.
 KEYWORD_NICHE: Dict[str, str] = {

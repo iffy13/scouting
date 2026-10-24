@@ -22,7 +22,7 @@ from lead_filter import service_junk_reason
 from scout import CAREFUL_REGIONS, init_scout_tables
 
 JOBS = {
-    "whatsapp_api": ["--countries", "AE,SA,QA,KW,BH,OM,SG,MY"],
+    "whatsapp_api": ["--countries", "AE,SA,QA,KW,BH,OM,SG,MY,MX,BR,CO,AR,CL"],
     "receptionist": ["--countries", "US,CA,AU,NZ"],
     "render_3d": ["--countries", ",".join(render3d.COUNTRIES)],
     "lead_gen": ["--countries", ",".join(leadgen.COUNTRIES)],
