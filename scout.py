@@ -29,6 +29,8 @@ from scout_signals import SCORERS, SCOUT_UA, inspect_site
 from scrapers.direct_web import DirectWebScraper
 from scrapers.multi_platform import MultiPlatformScraper
 from scrapers.serper import SerperScraper, SerperUnavailable
+from scrapers.google_places import GooglePlacesScraper, maps_fit
+from scrapers.osm_leads import OSMLeadScraper
 from services import SERVICES, get_service, validate_mailbox_map
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -74,7 +76,8 @@ def init_scout_tables():
         """)
         for col in ("sent_at TIMESTAMP", "sender_inbox TEXT", "gmail_thread_id TEXT",
                     "last_reply_id TEXT", "reply_snippet TEXT", "replied_at TIMESTAMP", "sent_subject TEXT",
-                    "followup_sent_at TIMESTAMP", "skip_reason TEXT", "send_attempts INTEGER DEFAULT 0", "sent_to TEXT", "sent_body TEXT", "followup_body TEXT"):
+                    "followup_sent_at TIMESTAMP", "skip_reason TEXT", "send_attempts INTEGER DEFAULT 0", "sent_to TEXT", "sent_body TEXT", "followup_body TEXT",
+                    "place_id TEXT", "source TEXT"):
             try:
                 conn.execute(f"ALTER TABLE scout_leads ADD COLUMN {col}")
             except Exception:
@@ -145,6 +148,31 @@ def _serper_note_due() -> bool:
     return True
 
 
+def _places_count(day: str) -> int:
+    with get_connection() as conn:
+        conn.execute("CREATE TABLE IF NOT EXISTS scout_state (key TEXT PRIMARY KEY, value TEXT)")
+        row = conn.execute("SELECT value FROM scout_state WHERE key=?", (f"places_calls_{day}",)).fetchone()
+    return int(row[0]) if row else 0
+
+
+def _places_add(day: str, n: int):
+    with get_connection() as conn:
+        conn.execute("CREATE TABLE IF NOT EXISTS scout_state (key TEXT PRIMARY KEY, value TEXT)")
+        conn.execute("INSERT OR REPLACE INTO scout_state (key, value) VALUES (?, ?)",
+                     (f"places_calls_{day}", str(_places_count(day) + n)))
+        conn.commit()
+
+
+def use_places() -> bool:
+    """Google Maps (Places API) is the first source when GOOGLE_PLACES_API_KEY is set, unless SCOUT_SOURCE=web."""
+    return bool(os.getenv("GOOGLE_PLACES_API_KEY")) and os.getenv("SCOUT_SOURCE", "").lower() != "web"
+
+
+def use_osm() -> bool:
+    """OpenStreetMap (free, no key) is on by default. OSM_SOURCE=off or SCOUT_SOURCE=web turns it off."""
+    return os.getenv("OSM_SOURCE", "on").lower() != "off" and os.getenv("SCOUT_SOURCE", "").lower() != "web"
+
+
 def use_serper() -> bool:
     """Serper is used when SERPER_API_KEY is set, unless SCOUT_SOURCE=web forces the free web search."""
     return bool(os.getenv("SERPER_API_KEY")) and os.getenv("SCOUT_SOURCE", "").lower() != "web"
@@ -179,15 +207,23 @@ async def _scout_service(service_id: str, countries: List[str], keywords: List[s
         logger.info(f"Skipping scouting for {svc.id}: {backlog} approved leads are still waiting to be sent "
                     f"(limit {backlog_max}), no search credits used.")
         return {"added": 0, "blocked": ""}
+    places = GooglePlacesScraper(get_count=_places_count, add_count=_places_add) if use_places() else None
+    if places:
+        logger.info(f"Search source: Google Maps (Places API), {places.calls_left_today()} calls left today")
+    osm = OSMLeadScraper() if use_osm() else None
+    if osm:
+        logger.info(f"Search source: OpenStreetMap, free (up to {osm.max_queries} queries)")
     serper = SerperScraper() if use_serper() else None
     serper_max = int(os.getenv("SERPER_MAX_QUERIES") or 16)
+    web_ok = False
     if serper:
         logger.info(f"Search source: Serper API (up to {serper_max} queries)")
-    else:
+    elif not places and not osm:
         reason = await search_engine_check()
         if reason:
             _blocked_note(svc.id, reason)
             return {"added": 0, "blocked": reason}
+        web_ok = True
         logger.info("Search source: DuckDuckGo web search")
     blocked = ""
     direct = DirectWebScraper()
@@ -208,15 +244,29 @@ async def _scout_service(service_id: str, countries: List[str], keywords: List[s
                 break
             logger.info(f"Scouting [{kw}] in [{ctry}] for {svc.id}")
             leads: List[Dict[str, Any]] = []
-            if serper:
-                if serper.queries >= serper_max:
-                    break
+            if places and places.calls_left_today() > 0:
+                try:
+                    leads = await places.search(kw, ctry, limit=20)
+                except Exception as e:
+                    logger.warning(f"Google Maps search failed: {str(e)[:150]}")
+            if not leads and osm and not osm.exhausted:
+                leads = await osm.search(kw, ctry, limit=20)
+            if leads:
+                pass  # a map source answered, no Serper credit or web search needed for this pair
+            elif serper and serper.queries < serper_max:
                 try:
                     leads = await serper.search(kw, ctry, limit=10)
                 except SerperUnavailable as e:
-                    blocked = f"{e}. The free credits are probably used up"
-                    _blocked_note(svc.id, blocked, tell=_serper_note_due())
-                    break
+                    note = f"{e}. The free credits are probably used up"
+                    if not (osm and not osm.exhausted):
+                        blocked = note
+                        _blocked_note(svc.id, blocked, tell=_serper_note_due())
+                        break
+                    logger.info(f"Serper stopped ({note}), carrying on with OpenStreetMap")
+                    serper = None
+            elif not web_ok:
+                if not (osm and not osm.exhausted) and not (places and places.calls_left_today() > 0):
+                    break  # every source used up for this run
             else:
                 await asyncio.sleep(random.uniform(4, 8))
                 res = await asyncio.gather(
@@ -241,6 +291,10 @@ async def _scout_service(service_id: str, countries: List[str], keywords: List[s
                 if not domain or not website or domain in seen or not is_valid_prospect_domain(domain, website) or service_junk_reason(svc.id, lead.get("name"), domain, website):
                     continue
                 seen.add(domain)
+                maps_pts, maps_ev, maps_junk = maps_fit(lead, svc.id)
+                if maps_junk:
+                    logger.info(f"  skip {domain}: {maps_junk}")
+                    continue
 
                 with get_connection() as conn:
                     if known_domain(conn, domain):
@@ -254,10 +308,15 @@ async def _scout_service(service_id: str, countries: List[str], keywords: List[s
                     contact = await researcher.research_business(website)
                 except Exception:
                     contact = {}
-                contact["phone"] = lead.get("phone")
-                emails = clean_emails(contact.get("emails", []), domain)[:3]
+                # A Google Maps phone helps the score but is not stored (Google's terms), so lead["phone"] stays empty.
+                contact["phone"] = lead.get("phone") or (lead.get("maps") or {}).get("phone")
+                emails = clean_emails(list(contact.get("emails") or []) + [e for e in [lead.get("direct_email")] if e], domain)[:3]
 
-                score, evidence = scorer(sig, lead, contact)
+                score_lead = {**lead, "phone": contact["phone"]}
+                score, evidence = scorer(sig, score_lead, contact)
+                if score and maps_pts:
+                    score = min(100, score + maps_pts)
+                    evidence = list(evidence) + maps_ev
                 # Active business check: skip sites that look abandoned, favour ones updated this year or last.
                 latest = sig.get("latest_year")
                 stale_before = datetime.utcnow().year - 1
@@ -274,16 +333,17 @@ async def _scout_service(service_id: str, countries: List[str], keywords: List[s
                     conn.execute(
                         """INSERT OR IGNORE INTO scout_leads
                            (service_id, name, domain, website, country, city, keyword, phone,
-                            emails_json, owner_name, score, evidence_json, approach_note, status)
-                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                            emails_json, owner_name, score, evidence_json, approach_note, status, place_id, source)
+                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                         (svc.id, name, domain, website, ctry, lead.get("city"), kw, lead.get("phone"),
                          json.dumps(emails), contact.get("founder_name"), score, json.dumps(evidence),
-                         approach_note(ctry, emails, sig["has_contact_form"]), status),
+                         approach_note(ctry, emails, sig["has_contact_form"]), status,
+                         lead.get("place_id"), lead.get("source")),
                     )
                     conn.commit()
                 added += 1
                 logger.info(f"  {name} ({domain}) score {score} -> {status}")
-            if added >= max_new or blocked or (serper and serper.queries >= serper_max):
+            if added >= max_new or blocked:
                 break
     logger.info(f"Scouted {added} new businesses for {svc.id}")
     try:

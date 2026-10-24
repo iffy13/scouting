@@ -37,6 +37,9 @@ jobs:
       ACCOUNT_RECEPTIONIST_JSON: ${{ secrets.ACCOUNT_RECEPTIONIST_JSON }}
       ACCOUNT_BOOKS_JSON: ${{ secrets.ACCOUNT_BOOKS_JSON }}
       SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
+      GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+      PLACES_DAILY_CALLS: ${{ vars.PLACES_DAILY_CALLS || '30' }}
+      OSM_MAX_QUERIES: ${{ vars.OSM_MAX_QUERIES || '16' }}
       SERPER_MAX_QUERIES: ${{ vars.SERPER_MAX_QUERIES || '16' }}
       SCOUT_DAILY_CAP: ${{ vars.SCOUT_DAILY_CAP || '25' }}
       AP_SCOUT_MAX: ${{ vars.AP_SCOUT_MAX || '20' }}
