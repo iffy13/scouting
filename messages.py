@@ -96,6 +96,9 @@ def compose(service_id: str, lead: Dict[str, Any], footer_text: str) -> Optional
     import pitch
     if service_id not in ("whatsapp_api", "receptionist", "render_3d", "lead_gen"):
         return None
+    local = _local(service_id, lead)
+    if local:
+        return local
     name = display_name(lead.get("name")) or UNUSABLE_NAME
     if service_id == "lead_gen":
         import leadgen
@@ -112,6 +115,30 @@ def compose(service_id: str, lead: Dict[str, Any], footer_text: str) -> Optional
     return subject, body + "\n\n" + footer_text.lstrip("\n")
 
 
+def _local_footer(lang: str) -> str:
+    """The signature in the reader's language (same facts as outreach.footer: name, role, business, postal address)."""
+    import localize
+    import outreach
+    return localize.footer(lang, outreach.SENDER_NAME, outreach.SENDER_TITLE, outreach.BUSINESS_NAME,
+                           outreach.POSTAL_ADDRESS)
+
+
+def _local(service_id: str, lead: Dict[str, Any], first_subject: Optional[str] = None) -> Optional[Tuple[str, str]]:
+    """Spanish, Portuguese or Arabic email for leads in those countries (localize.py); None means use English."""
+    import localize
+    lang = localize.language_for(lead.get("country"), service_id)
+    if lang == "en":
+        return None
+    name = display_name(lead.get("name"))
+    owner = lead.get("owner_name")
+    if first_subject is None:
+        evidence = " | ".join(json.loads(lead.get("evidence_json") or "[]"))
+        subject, body = localize.build_first(lang, service_id, name, evidence, _seed(lead), owner)
+    else:
+        subject, body = localize.build_followup(lang, service_id, name, _seed(lead), first_subject, owner)
+    return subject, body + "\n\n" + _local_footer(lang)
+
+
 def _team_hello(body: str, name: str) -> str:
     """Same greeting as the first email: "Hi Glow Med Spa team," instead of a bare "Hello," when the name is usable."""
     if body.startswith("Hello,") and name != UNUSABLE_NAME and len(name) <= 30:
@@ -126,6 +153,9 @@ def compose_followup(service_id: str, lead: Dict[str, Any], footer_text: str) ->
     if not first_subject:
         composed = compose(service_id, lead, footer_text)
         first_subject = composed[0] if composed else (lead.get("name") or UNUSABLE_NAME)
+    local = _local(service_id, lead, first_subject)
+    if local:
+        return local
     name = display_name(lead.get("name")) or UNUSABLE_NAME
     if service_id == "lead_gen":
         import leadgen

@@ -30,7 +30,7 @@ from safety import mask_email, mask_emails_in, open_countries
 from services import SERVICES, load_mailbox_map
 
 COUNTRIES = {
-    "whatsapp_api": ["AE", "SA", "QA", "KW", "BH", "OM", "SG", "MY"],
+    "whatsapp_api": ["AE", "SA", "QA", "KW", "BH", "OM", "SG", "MY", "MX", "BR", "CO", "AR", "CL"],
     "receptionist": ["US", "CA", "AU", "NZ"],
     "render_3d": render3d.COUNTRIES,
     "lead_gen": leadgen.COUNTRIES,

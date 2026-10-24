@@ -48,6 +48,8 @@ COUNTRY_CLOCK = {
     "OM": (4, SUN_THU), "SA": (3, SUN_THU), "QA": (3, SUN_THU), "KW": (3, SUN_THU), "BH": (3, SUN_THU),
     "SG": (8, MON_FRI), "MY": (8, MON_FRI), "HK": (8, MON_FRI), "PH": (8, MON_FRI), "IN": (5.5, MON_FRI),
     "NG": (1, MON_FRI), "GH": (0, MON_FRI), "KE": (3, MON_FRI),
+    # Latin America (none of these use daylight saving time any more, Chile aside: -4 most of the year, -3 in summer)
+    "MX": (-6, MON_FRI), "CO": (-5, MON_FRI), "BR": (-3, MON_FRI), "AR": (-3, MON_FRI), "CL": (-4, MON_FRI),
 }
 OPEN_FROM = int(os.getenv("SEND_LOCAL_START", "8"))
 OPEN_UNTIL = int(os.getenv("SEND_LOCAL_END", "17"))

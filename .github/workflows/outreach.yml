@@ -18,7 +18,9 @@ on:
     - cron: "7 22 * * 0-4"   # Receptionist: Australia 08:07, New Zealand 10:07 (their Monday to Friday)
     - cron: "23 4 * * 1-5"   # Lead lists: Asia and Australia (SG/MY/PH/HK 12:23, India 09:53, AU 14:23, NZ 16:23)
     - cron: "23 12 * * 0-5"  # Lead lists: Gulf 15:23-16:23, Nigeria 13:23, Ghana 12:23, Kenya 15:23
-    - cron: "3 16 * * 1-5"   # Lead lists: US and Canada 11:03 Eastern
+    - cron: "3 16 * * 1-5"   # Lead lists: US and Canada 11:03 Eastern, Mexico 10:03, Brazil and Argentina 13:03
+    - cron: "17 15 * * 1-5"  # WhatsApp: Latin America (Mexico 09:17, Colombia 10:17, Chile 11:17, Brazil 12:17)
+    - cron: "47 16 * * 1-5"  # 3D rendering: Latin America (Mexico 10:47, Colombia 11:47, Brazil 13:47)
   workflow_dispatch:
     inputs:
       service:
@@ -61,7 +63,11 @@ jobs:
       ACCOUNT_RECEPTIONIST_JSON: ${{ secrets.ACCOUNT_RECEPTIONIST_JSON }}
       ACCOUNT_BOOKS_JSON: ${{ secrets.ACCOUNT_BOOKS_JSON }}
       SCOUT_DAILY_CAP: ${{ vars.SCOUT_DAILY_CAP || '30' }}
-      MAILBOX_DAILY_CAP: ${{ vars.MAILBOX_DAILY_CAP || '10' }}
+      MAILBOX_DAILY_CAP: ${{ vars.MAILBOX_DAILY_CAP || '70' }}
+      # Week-by-week limit for a new mailbox (15, 25, 40, 55, then MAILBOX_DAILY_CAP). Set the variable to "off"
+      # to send MAILBOX_DAILY_CAP from day one (not advised on a domain younger than a month).
+      WARMUP_STEPS: ${{ vars.WARMUP_STEPS || '15,25,40,55' }}
+      LOCAL_LANGUAGES: ${{ vars.LOCAL_LANGUAGES }}
       OUTREACH_PAUSED: ${{ vars.OUTREACH_PAUSED || 'false' }}
       # Each send run scouts first when its queue is running low (fewer than SCOUT_BACKLOG_MAX approved leads
       # waiting), then sends. A full queue skips scouting, so no Serper credits are spent for nothing.
@@ -100,7 +106,7 @@ jobs:
           if [ -z "$s" ]; then
             case "${{ github.event.schedule }}" in
               "7 14 * * 1-5"|"41 18 * * 1-5"|"7 22 * * 0-4") s=receptionist ;;
-              "7 8 * * 0-5"|"7 20 * * 1-5"|"37 23 * * 0-4") s=render_3d ;;
+              "7 8 * * 0-5"|"7 20 * * 1-5"|"37 23 * * 0-4"|"47 16 * * 1-5") s=render_3d ;;
               "23 4 * * 1-5"|"23 12 * * 0-5"|"3 16 * * 1-5") s=lead_gen ;;
               *) s=whatsapp_api ;;
             esac

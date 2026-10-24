@@ -71,6 +71,12 @@ CITIES: Dict[str, List[str]] = {
     "OM": ["Muscat", "Sohar", "Salalah"],
     "SG": ["Singapore"],
     "MY": ["Kuala Lumpur", "Petaling Jaya", "Penang", "Johor Bahru", "Shah Alam", "Ipoh"],
+    "MX": ["Ciudad de México", "Monterrey", "Guadalajara", "Querétaro", "Puebla", "Mérida", "León", "Tijuana"],
+    "BR": ["São Paulo", "Rio de Janeiro", "Belo Horizonte", "Curitiba", "Porto Alegre", "Brasília",
+           "Florianópolis", "Campinas", "Goiânia", "Recife"],
+    "CO": ["Bogotá", "Medellín", "Cali", "Barranquilla", "Bucaramanga"],
+    "AR": ["Buenos Aires", "Córdoba", "Rosario", "Mendoza"],
+    "CL": ["Santiago", "Viña del Mar", "Concepción"],
     "ZA": ["Johannesburg", "Cape Town", "Durban", "Pretoria", "Port Elizabeth", "Sandton"],
 }
 
@@ -184,7 +190,10 @@ class GooglePlacesScraper:
         ctry = country.upper()
         if not city or city == "General":
             city = random.choice(CITIES.get(ctry) or [""])
-        query = f"{keyword} in {city}" if city else keyword
+        import localize
+        local_kw = localize.search_keyword(keyword, ctry)  # "clínica dental" in Mexico, "imobiliária" in Brazil
+        connector = localize.CONNECTOR.get(localize.language_for(ctry), "in")
+        query = f"{local_kw} {connector} {city}" if city else local_kw
         body: Dict[str, Any] = {"textQuery": query, "pageSize": min(20, max(1, limit)),
                                 "regionCode": REGION_CODE.get(ctry, ctry)}
         out: List[Dict[str, Any]] = []

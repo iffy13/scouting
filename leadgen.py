@@ -35,7 +35,7 @@ MIN_SCORE = 55
 # Everywhere the send step is allowed to email. EU/EEA, UK, Switzerland and South Africa are left out: the
 # careful-regions rule never emails them, so scouting there would only burn search credits.
 COUNTRIES = ["US", "CA", "AU", "NZ", "AE", "SA", "QA", "KW", "BH", "OM", "SG", "MY", "HK", "PH", "IN",
-             "NG", "GH", "KE"]
+             "NG", "GH", "KE", "MX", "BR", "CO", "AR", "CL"]
 
 # keyword -> niche. Keywords already used by the other services are left out (one business, one service).
 KEYWORD_NICHE: Dict[str, str] = {

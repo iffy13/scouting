@@ -73,6 +73,16 @@ CITIES: Dict[str, List[Tuple[str, float, float]]] = {
     "NG": [("Lagos", 6.524, 3.379), ("Abuja", 9.077, 7.399), ("Port Harcourt", 4.816, 7.050)],
     "GH": [("Accra", 5.604, -0.187), ("Kumasi", 6.688, -1.624)],
     "KE": [("Nairobi", -1.292, 36.822), ("Mombasa", -4.043, 39.668)],
+    "MX": [("Mexico City", 19.433, -99.133), ("Monterrey", 25.686, -100.316), ("Guadalajara", 20.659, -103.349),
+           ("Querétaro", 20.588, -100.390), ("Puebla", 19.041, -98.206), ("Mérida", 20.967, -89.592)],
+    "BR": [("São Paulo", -23.550, -46.633), ("Rio de Janeiro", -22.907, -43.173), ("Belo Horizonte", -19.917, -43.934),
+           ("Curitiba", -25.429, -49.271), ("Porto Alegre", -30.035, -51.218), ("Brasília", -15.794, -47.882),
+           ("Florianópolis", -27.595, -48.548), ("Campinas", -22.906, -47.061)],
+    "CO": [("Bogotá", 4.711, -74.072), ("Medellín", 6.244, -75.581), ("Cali", 3.452, -76.532),
+           ("Barranquilla", 10.964, -74.796)],
+    "AR": [("Buenos Aires", -34.604, -58.382), ("Córdoba", -31.420, -64.188), ("Rosario", -32.947, -60.639),
+           ("Mendoza", -32.889, -68.845)],
+    "CL": [("Santiago", -33.449, -70.669), ("Viña del Mar", -33.025, -71.552), ("Concepción", -36.827, -73.050)],
     "UK": [("Manchester", 53.481, -2.242), ("Leeds", 53.801, -1.549), ("Bristol", 51.455, -2.588)],
     "IE": [("Dublin", 53.350, -6.260), ("Cork", 51.899, -8.476)],
 }
@@ -123,7 +133,13 @@ TAG_RULES: List[Tuple[Tuple[str, ...], List[Tuple[str, str]]]] = [
 # Words that add nothing to a name match.
 STOP_WORDS = {"company", "firm", "services", "service", "studio", "contractor", "agency", "store", "clinic",
               "repair", "emergency", "commercial", "residential", "custom", "luxury", "personal", "injury",
-              "the", "and", "of", "in"}
+              "the", "and", "of", "in",
+              # Spanish and Portuguese (local search terms from localize.py)
+              "tienda", "agencia", "agência", "empresa", "servicios", "serviços", "clínica", "clinica", "estudio",
+              "escritório", "escritorio", "despacho", "loja", "de", "del", "en", "la", "el", "los", "las", "para",
+              "do", "da", "dos", "das", "em", "con", "com", "y"}
+ACCENTS = {"a": "[aáàâã]", "e": "[eéê]", "i": "[ií]", "o": "[oóôõ]", "u": "[uúü]", "c": "[cç]", "n": "[nñ]"}
+PLAIN = str.maketrans("áàâãéêíóôõúüçñ", "aaaaeeiooouucn")
 
 
 def tags_for(keyword: str) -> List[Tuple[str, str]]:
@@ -134,20 +150,29 @@ def tags_for(keyword: str) -> List[Tuple[str, str]]:
     return []
 
 
-def name_pattern(keyword: str) -> Optional[str]:
-    words = [w for w in re.findall(r"[a-z]+", keyword.lower()) if w not in STOP_WORDS and len(w) > 2]
+def name_pattern(keyword: str, accents: bool = False) -> Optional[str]:
+    """Words of the keyword that a business name would contain. accents=True (local-language terms) also matches
+    names written with or without accents: "clínica" and "clinica"."""
+    words = [w for w in re.findall(r"[^\W\d_]+", keyword.lower()) if w not in STOP_WORDS and len(w) > 2]
     if not words:
         return None
-    return " ".join(words)
+    text = " ".join(words)
+    if not accents:
+        return text
+    return "".join(ACCENTS.get(ch, ch) for ch in text.translate(PLAIN))
 
 
-def build_query(keyword: str, lat: float, lon: float, limit: int) -> str:
+def build_query(keyword: str, lat: float, lon: float, limit: int, local_keyword: Optional[str] = None) -> str:
     near = f"(around:{RADIUS_M},{lat},{lon})"
     site = '[~"^(website|contact:website)$"~"."]'
     parts = [f'nwr["{k}"="{v}"]{site}{near};' for k, v in tags_for(keyword)]
     pat = name_pattern(keyword)
     if pat:
         parts.append(f'nwr["name"~"{pat}",i]{site}{near};')
+    plain_local = name_pattern(local_keyword.translate(PLAIN)) if local_keyword and local_keyword != keyword else None
+    local = name_pattern(local_keyword, accents=True) if plain_local and plain_local != pat else None
+    if local:
+        parts.append(f'nwr["name"~"{local}",i]{site}{near};')
     return f"[out:json][timeout:60];({''.join(parts)});out tags center {max(limit * 3, 30)};"
 
 
@@ -236,7 +261,8 @@ class OSMLeadScraper:
         if self.queries > 1:
             await asyncio.sleep(2)  # be polite to the free servers
         try:
-            data = await self._fetch(build_query(keyword, lat, lon, limit))
+            import localize
+            data = await self._fetch(build_query(keyword, lat, lon, limit, localize.search_keyword(keyword, ctry)))
         except Exception as e:
             logger.warning(f"OpenStreetMap search failed for [{keyword}] in {cname}: {str(e)[:120]}")
             return []
@@ -274,6 +300,10 @@ def _self_test() -> int:
     check(tags_for("interior design studio")[0] == ("shop", "interior_decoration"), "interior tags")
     check(tags_for("cosmetic dentist") and tags_for("cosmetic dentist")[0][1] == "dentist", "dentist wins over cosmetic")
     check(name_pattern("company services") is None, "stop words only")
+    lq = build_query("dental clinic", 19.4, -99.1, 20, "clínica dental")
+    check('"name"~"dental",i' in lq and lq.count('"name"~') == 1, f"local term equal to English adds nothing: {lq}")
+    lq = build_query("real estate agency", 19.4, -99.1, 20, "inmobiliaria")
+    check('"name"~"[ií][nñ]m[oóôõ]b[ií]l[ií][aáàâã]r[ií][aáàâã]",i' in lq, f"Spanish name search: {lq}")
     # every service keyword should get either tags or a name pattern
     from services import SERVICES
     for s in SERVICES.values():

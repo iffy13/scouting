@@ -47,15 +47,20 @@ PLACES = (
     "australia", "oman", "bahrain", "uae", "united arab emirates", "dubai", "abu dhabi", "saudi arabia", "riyadh", "jeddah",
     "qatar", "doha", "kuwait", "singapore", "malaysia", "kuala lumpur", "united states", "usa", "canada", "new zealand",
     "ireland", "united kingdom", "uk", "london", "italy", "spain", "portugal", "germany", "netherlands",
+    "mexico", "méxico", "cdmx", "brasil", "brazil", "colombia", "bogotá", "argentina", "chile", "são paulo",
 )
 LIST_NAME_PATTERNS = [
     r"^\d+\+?\s+\w+",                                                  # "10 Electricians ...", "25 best ..."
     r"\b(companies|dealerships|electricians|plumbers|clinics|salons|agencies|contractors)\b.*\bin\s+(the\s+)?(" + "|".join(PLACES) + r")\b",
+    # Spanish and Portuguese lists and directories: "Las 10 mejores clínicas...", "Melhores imobiliárias em..."
+    r"\b(mejores|melhores|directorio|diretório|guía de|guia de|ranking)\b",
+    r"^(las|los|as|os)\s+\d+\b",
 ]
 # URL paths that belong to lists, directories and location landing pages, not a business home page
 LIST_URL_PATTERNS = [
     r"/listicles?/", r"/top-\d*", r"/best-", r"/top-agencies/", r"/directory/", r"/companies/", r"/list-of-",
     r"-in-(" + "|".join(p.replace(" ", "-") for p in PLACES) + r")(/|$|-)", r"/\d+-[a-z]+-in-",
+    r"/mejores-", r"/melhores-", r"/directorio/", r"/diretorio/",
 ]
 FREE_MAIL = ("gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "live.com", "yahoo.com", "icloud.com", "me.com", "aol.com", "proton.me", "protonmail.com")
 # Font and theme credits that sit in page code, not real contacts

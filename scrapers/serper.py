@@ -31,10 +31,14 @@ class SerperScraper(BaseScraper):
     async def search(self, keyword: str, country: str = "US", city: Optional[str] = None, limit: int = 10) -> List[Dict[str, Any]]:
         country_name = COUNTRY_NAMES.get(country.upper(), country)
         gl = "gb" if country.upper() == "UK" else country.lower()
-        q = f"{keyword} in {country_name}"
+        import localize
+        q = localize.search_query(keyword, country, country_name)  # "clínica dental en México" for MX
         if city:
             q = f"{q} {city}"
         payload = {"q": q, "gl": gl, "num": 20, "page": random.choice([1, 1, 2, 3])}
+        lang = localize.language_for(country)
+        if lang in ("es", "pt"):
+            payload["hl"] = "pt-br" if lang == "pt" else "es"
         headers = {"X-API-KEY": self.api_key, "Content-Type": "application/json"}
         self.queries += 1
         try:

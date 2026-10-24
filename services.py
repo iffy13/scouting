@@ -59,7 +59,7 @@ SERVICES: Dict[str, Service] = {
         ],
         # Markets where WhatsApp is the main customer channel. ES, IT, PT, NL, DE and UK were removed:
         # they are in CAREFUL_REGIONS, so the send step always skipped them and scouting them was wasted.
-        countries=["AE", "SA", "QA", "KW", "BH", "OM", "SG", "MY"],
+        countries=["AE", "SA", "QA", "KW", "BH", "OM", "SG", "MY", "MX", "BR", "CO", "AR", "CL"],
         min_score=45,
     ),
     "receptionist": Service(

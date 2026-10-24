@@ -25,7 +25,8 @@ COUNTRY_NAMES = {
     "AE": "United Arab Emirates", "SA": "Saudi Arabia", "QA": "Qatar",
     "KW": "Kuwait", "BH": "Bahrain", "OM": "Oman", "SG": "Singapore",
     "HK": "Hong Kong", "JP": "Japan", "KR": "South Korea", "TW": "Taiwan",
-    "MY": "Malaysia", "TH": "Thailand"
+    "MY": "Malaysia", "TH": "Thailand", "PH": "Philippines", "IN": "India", "NG": "Nigeria", "GH": "Ghana",
+    "KE": "Kenya", "MX": "Mexico", "BR": "Brazil", "CO": "Colombia", "AR": "Argentina", "CL": "Chile"
 }
 
 # Commercial cities mapping for targeted city-level scouting
@@ -138,6 +139,14 @@ class DirectWebScraper(BaseScraper):
                 f"{keyword} company in {city}"
             ]
             display_location = city
+        import localize
+        if localize.language_for(country) in ("es", "pt"):
+            # Local-language search: "clínica dental en México", "imobiliária em São Paulo"
+            local_kw = localize.search_keyword(keyword, country)
+            joiner = localize.CONNECTOR[localize.language_for(country)]
+            place = city if city and city not in ("General", country) else localize.COUNTRY_LOCAL_NAMES.get(country.upper(), country_name)
+            queries = [f"{local_kw} {joiner} {place}", f"{local_kw} {place} contacto" if localize.language_for(country) == "es"
+                       else f"{local_kw} {place} contato"]
 
         results = []
         seen_domains = set()

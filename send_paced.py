@@ -23,7 +23,7 @@ from typing import List, Optional
 
 import tg
 from db import get_connection
-from outreach import DAILY_CAP, mailbox_cap, mailbox_room, _leads, _require_identity, build_message, note_send_failure, park_lead, send_blocker
+from outreach import DAILY_CAP, mailbox_cap, mailbox_room, service_share, _leads, _require_identity, build_message, note_send_failure, park_lead, send_blocker
 from safety import mask_email, mask_text
 from scout import init_scout_tables
 from services import SERVICES, get_service
@@ -71,7 +71,10 @@ async def run(service_id: str, limit: int, lo: float, hi: float, auto: bool, cou
     box_room = mailbox_room(box)
     if box_room == 0:
         sys.exit(f"Daily cap reached: the mailbox already sent {mailbox_cap(box)} emails today (all services together, warm-up included).")
-    room = min(room, box_room)
+    share = service_share(box, service_id)
+    if sent_today >= share:
+        sys.exit(f"{service_id} already sent its share of {share} today (the mailbox limit is split between the services).")
+    room = min(room, box_room, share - sent_today)
     target = min(limit, room)
 
     verifier = EmailVerifier()

@@ -150,7 +150,8 @@ MAILBOX_DAILY_CAP = int(os.getenv("MAILBOX_DAILY_CAP", "10"))
 # Warm-up for a new sending mailbox: the most it may send per day in its 1st, 2nd, 3rd... week, counted from its
 # first email. A brand-new domain that sends 50 a day lands in spam, so this applies even when MAILBOX_DAILY_CAP is
 # set higher. WARMUP_STEPS="" switches it off.
-WARMUP_STEPS = [int(x) for x in os.getenv("WARMUP_STEPS", "10,15,20,25,30").split(",") if x.strip().isdigit()]
+# Default: 15, 25, 40, 55 a day in weeks 1 to 4, then MAILBOX_DAILY_CAP (70) from week 5.
+WARMUP_STEPS = [int(x) for x in os.getenv("WARMUP_STEPS", "15,25,40,55").split(",") if x.strip().isdigit()]
 
 
 def warmup_cap(first_sent: Optional[str], today: Optional[datetime.date] = None) -> Optional[int]:
@@ -173,6 +174,19 @@ def mailbox_cap(box: str) -> int:
         first = conn.execute("SELECT MIN(sent_at) FROM scout_leads WHERE LOWER(sender_inbox)=?", (box.lower(),)).fetchone()[0]
     w = warmup_cap(first)
     return MAILBOX_DAILY_CAP if w is None else min(MAILBOX_DAILY_CAP, w)
+
+
+def service_share(box: str, service_id: str) -> int:
+    """Fair part of today's mailbox limit for one service, so the services that send early in the UTC day
+    (WhatsApp to the Gulf) do not use up the whole day before the US and Latin America runs.
+    70 a day shared by 4 services = 18 each. SHARE_MAILBOX=false switches it off."""
+    if os.getenv("SHARE_MAILBOX", "true").lower() in ("false", "0", "no"):
+        return mailbox_cap(box)
+    mapping = load_mailbox_map()
+    sharing = [sid for sid, m in mapping.items() if (m or "").lower() == box.lower() and sid in SERVICES
+               and sid in ("whatsapp_api", "receptionist", "render_3d", "lead_gen")]
+    n = max(1, len(set(sharing) | {service_id}))
+    return -(-mailbox_cap(box) // n)
 
 
 def mailbox_room(box: str) -> int:
@@ -457,12 +471,20 @@ def cmd_telegram():
 OPT_OUT = re.compile(
     r"(?<![-\w])(unsubscribe|remove (me|us)|take (me|us) off|not interested|no thanks|no thank you|not relevant|"
     r"do not (email|contact|message)|don'?t (email|contact|message)|"
-    r"(please )?stop (emailing|contacting|sending|messaging|writing|spamming)|not for us|spam)\b", re.I
+    r"(please )?stop (emailing|contacting|sending|messaging|writing|spamming)|not for us|spam|"
+    # Spanish, Portuguese, Arabic (the local-language emails ask for "baja", "sair" or "إلغاء")
+    r"darme de baja|dar de baja|de baja|no me interesa|no nos interesa|no (me|nos) escriba|no gracias|"
+    r"descadastr\w*|n[ãa]o (tenho|temos) interesse|n[ãa]o me interessa|sair da lista|n[ãa]?o,? obrigad[oa])\b"
+    r"|إلغاء|الغاء|غير مهتم|لا شكرا|لا أرغب|لا نرغب|أزيلوني", re.I
 )
 JUST_NO = {"no", "nope", "no thanks", "no thank you", "not interested", "stop", "please stop", "stop please",
-           "stop it", "unsubscribe"}
-POSITIVE = re.compile(r"\b(demo|outline|samples?|portfolio|examples?|quote|rates?|yes|yeah|sure|interested|send (it|me|us|over)|how much|price|pricing|cost|call me)\b", re.I)
-AUTO_REPLY = re.compile(r"(out of office|automatic reply|auto-?reply|autoreply|vacation)", re.I)
+           "stop it", "unsubscribe", "baja", "baja gracias", "sair", "sair obrigado", "sair obrigada", "pare", "não", "nao"}
+POSITIVE = re.compile(r"\b(demo|outline|samples?|portfolio|examples?|quote|rates?|yes|yeah|sure|interested|send (it|me|us|over)|how much|price|pricing|cost|call me|"
+                      r"s[ií]|claro|me interesa|nos interesa|ejemplos?|muestras?|precio|cu[aá]nto|cotizaci[oó]n|"
+                      r"sim|pode mandar|tenho interesse|temos interesse|exemplos?|amostras?|pre[çc]o|quanto|or[çc]amento)\b"
+                      r"|نعم|أرسل|ارسل|مهتم|كم السعر|السعر|التكلفة|عروض|أمثلة", re.I)
+AUTO_REPLY = re.compile(r"(out of office|automatic reply|auto-?reply|autoreply|vacation|respuesta autom[aá]tica|"
+                        r"fuera de la oficina|resposta autom[aá]tica|fora do escrit[oó]rio|ausente|رد تلقائي)", re.I)
 QUOTE_START = re.compile(r"^\s*(on .{3,200}wrote:?\s*$|-{2,}\s*original message\s*-{2,}|from:\s.+|sent from my )", re.I)
 FREE_MAIL_HOSTS = ("gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "live.com", "yahoo.com", "icloud.com")
 
@@ -487,10 +509,10 @@ def classify_reply(raw: str) -> str:
     if AUTO_REPLY.search(text):
         return "auto"
     lines = [l.strip() for l in text.split("\n") if l.strip()]
-    first = re.sub(r"[^a-z ]", "", lines[0].lower()).strip() if lines else ""
+    first = re.sub(r"[^\w ]", "", lines[0].lower()).strip() if lines else ""
     if OPT_OUT.search(text) or first in JUST_NO:
         return "optout"
-    if POSITIVE.search(text) or "?" in text:
+    if POSITIVE.search(text) or "?" in text or "؟" in text:
         return "positive"
     return "other"
 
