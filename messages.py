@@ -115,12 +115,12 @@ def compose(service_id: str, lead: Dict[str, Any], footer_text: str) -> Optional
     return subject, body + "\n\n" + footer_text.lstrip("\n")
 
 
-def _local_footer(lang: str) -> str:
+def _local_footer(lang: str, country: Optional[str] = None) -> str:
     """The signature in the reader's language (same facts as outreach.footer: name, role, business, postal address)."""
     import localize
     import outreach
     return localize.footer(lang, outreach.SENDER_NAME, outreach.SENDER_TITLE, outreach.BUSINESS_NAME,
-                           outreach.POSTAL_ADDRESS)
+                           outreach.POSTAL_ADDRESS if outreach.address_needed(country) else "")
 
 
 def _local(service_id: str, lead: Dict[str, Any], first_subject: Optional[str] = None) -> Optional[Tuple[str, str]]:
@@ -136,7 +136,7 @@ def _local(service_id: str, lead: Dict[str, Any], first_subject: Optional[str] =
         subject, body = localize.build_first(lang, service_id, name, evidence, _seed(lead), owner)
     else:
         subject, body = localize.build_followup(lang, service_id, name, _seed(lead), first_subject, owner)
-    return subject, body + "\n\n" + _local_footer(lang)
+    return subject, body + "\n\n" + _local_footer(lang, lead.get("country"))
 
 
 def _team_hello(body: str, name: str) -> str:
