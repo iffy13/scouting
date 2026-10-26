@@ -27,7 +27,7 @@ SAMPLE = {"name": "Sample Dental Clinic", "domain": "sample.com", "owner_name": 
 
 def build_followup(service_id, lead):
     from messages import compose_followup
-    return compose_followup(service_id, lead, footer())
+    return compose_followup(service_id, lead, footer(lead.get("country")))
 
 
 def thread_ids(pool, box, thread_id):

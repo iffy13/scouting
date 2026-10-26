@@ -59,21 +59,36 @@ def website_text() -> str:
     return w.rstrip("/")
 
 
-def footer() -> str:
-    """Professional plain text signature: name, role, business, website, postal address, then the opt out line."""
+# Countries whose cold-email law requires the sender's postal address in every email: the US (CAN-SPAM) and
+# Canada (CASL). Everywhere else the signature leaves the address out. ADDRESS_COUNTRIES changes the list.
+def address_needed(country: Optional[str]) -> bool:
+    raw = os.getenv("ADDRESS_COUNTRIES")
+    codes = {c.strip().upper() for c in (raw if raw is not None else "US,CA").split(",") if c.strip()}
+    return (country or "").upper() in codes
+
+
+def footer(country: Optional[str] = "US") -> str:
+    """Professional plain text signature: name, role, business, website, postal address (only where the law asks
+    for it, see address_needed), then the opt out line."""
     lines = [SENDER_NAME, f"{SENDER_TITLE}, {BUSINESS_NAME}" if SENDER_TITLE else BUSINESS_NAME]
     # No link in cold emails by default: a URL in a first email from a new mailbox is one of the strongest spam signals.
     # The website is still used when you reply by hand. WEBSITE_IN_EMAILS=true puts it back in the signature.
     if website_text() and os.getenv("WEBSITE_IN_EMAILS", "").lower() in ("true", "1", "yes"):
         lines.append(website_text())
-    lines.append(POSTAL_ADDRESS)
-    return "\n" + "\n".join(l for l in lines if l) + "\n\nNot relevant? Reply \"stop\" and I won't email you again."
+    if address_needed(country):
+        lines.append(POSTAL_ADDRESS)
+    return "\n" + "\n".join(l for l in lines if l) + "\n\n" + OPT_OUT_LINE
+
+
+# Plain, personal wording. Mail filters read "unsubscribe"/"reply STOP" footers as newsletter signs (Promotions).
+# "no" on its own is still read as an opt out (JUST_NO), as are "stop", "unsubscribe" and "not interested".
+OPT_OUT_LINE = os.getenv("OPT_OUT_LINE") or "If this isn't for you, just reply \"no\" and I won't write again."
 
 
 def build_message(service_id: str, lead: Dict[str, Any]) -> Tuple[str, str]:
     """Plain, honest first message. No fake replies, no fake history."""
     from messages import compose
-    composed = compose(service_id, lead, footer())
+    composed = compose(service_id, lead, footer(lead.get("country")))
     if composed:
         return composed
     name = lead["name"]
@@ -103,7 +118,7 @@ def build_message(service_id: str, lead: Dict[str, Any]) -> Tuple[str, str]:
         )
     else:
         raise ValueError(f"No message template for service '{service_id}'")
-    return subject, body.replace(" \n", "\n") + footer()
+    return subject, body.replace(" \n", "\n") + footer(lead.get("country"))
 
 
 def postal_address_problem(address: str) -> Optional[str]:
