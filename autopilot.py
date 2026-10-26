@@ -219,9 +219,13 @@ def approved_unsent(service_id: str) -> int:
     from scout import init_scout_tables
 
     init_scout_tables()
+    from scout import lead_sources
+    allowed = lead_sources()
+    src_sql = f" AND COALESCE(source,'web') IN ({','.join('?' * len(allowed))})" if allowed else ""
     with get_connection() as conn:
         return conn.execute(
-            "SELECT COUNT(*) FROM scout_leads WHERE service_id=? AND status='approved' AND sent_at IS NULL", (service_id,)
+            "SELECT COUNT(*) FROM scout_leads WHERE service_id=? AND status='approved' AND sent_at IS NULL" + src_sql,
+            (service_id, *(allowed or [])),
         ).fetchone()[0]
 
 

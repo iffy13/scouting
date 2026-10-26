@@ -17,7 +17,7 @@ import json
 import logging
 import os
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import aiohttp
 
@@ -168,14 +168,37 @@ def use_places() -> bool:
     return bool(os.getenv("GOOGLE_PLACES_API_KEY")) and os.getenv("SCOUT_SOURCE", "").lower() != "web"
 
 
+def lead_sources() -> Optional[List[str]]:
+    """LEAD_SOURCES limits scouting AND sending to these sources, e.g. "google_maps" (Google Maps, through the
+    Places API or Serper) or "google_maps,osm". Empty means every source, the old behaviour."""
+    raw = (os.getenv("LEAD_SOURCES") or "").strip().lower()
+    if raw == "all":
+        return None
+    return [x.strip() for x in raw.split(",") if x.strip()] or None
+
+
+def source_ok(source: str) -> bool:
+    allowed = lead_sources()
+    return allowed is None or source in allowed
+
+
+def use_serper_maps() -> bool:
+    """Google Maps results through Serper (no Google Cloud account or card). On when SERPER_API_KEY is set,
+    SERPER_MAPS=off turns it off."""
+    return (bool(os.getenv("SERPER_API_KEY")) and os.getenv("SERPER_MAPS", "on").lower() != "off"
+            and source_ok("google_maps"))
+
+
 def use_osm() -> bool:
     """OpenStreetMap (free, no key) is on by default. OSM_SOURCE=off or SCOUT_SOURCE=web turns it off."""
-    return os.getenv("OSM_SOURCE", "on").lower() != "off" and os.getenv("SCOUT_SOURCE", "").lower() != "web"
+    return (os.getenv("OSM_SOURCE", "on").lower() != "off" and os.getenv("SCOUT_SOURCE", "").lower() != "web"
+            and source_ok("osm"))
 
 
 def use_serper() -> bool:
     """Serper is used when SERPER_API_KEY is set, unless SCOUT_SOURCE=web forces the free web search."""
-    return bool(os.getenv("SERPER_API_KEY")) and os.getenv("SCOUT_SOURCE", "").lower() != "web"
+    return (bool(os.getenv("SERPER_API_KEY")) and os.getenv("SCOUT_SOURCE", "").lower() != "web"
+            and source_ok("serper"))
 
 
 async def scout_service(service_id: str, countries: List[str], keywords: List[str], max_new: int) -> Dict[str, Any]:
@@ -199,9 +222,16 @@ async def _scout_service(service_id: str, countries: List[str], keywords: List[s
 
     init_scout_tables()
     backlog_max = int(os.getenv("SCOUT_BACKLOG_MAX") or 40)
+    allowed = lead_sources()
+    src_sql, src_args = "", []
+    if allowed:
+        # Only leads that may be sent count: an old backlog from other sources must not stop the scouting.
+        src_sql = f" AND COALESCE(source,'web') IN ({','.join('?' * len(allowed))})"
+        src_args = allowed
     with get_connection() as conn:
         backlog = conn.execute(
-            "SELECT COUNT(*) FROM scout_leads WHERE service_id=? AND status='approved' AND sent_at IS NULL", (svc.id,)
+            "SELECT COUNT(*) FROM scout_leads WHERE service_id=? AND status='approved' AND sent_at IS NULL" + src_sql,
+            (svc.id, *src_args),
         ).fetchone()[0]
     if backlog >= backlog_max:
         logger.info(f"Skipping scouting for {svc.id}: {backlog} approved leads are still waiting to be sent "
@@ -210,6 +240,10 @@ async def _scout_service(service_id: str, countries: List[str], keywords: List[s
     places = GooglePlacesScraper(get_count=_places_count, add_count=_places_add) if use_places() else None
     if places:
         logger.info(f"Search source: Google Maps (Places API), {places.calls_left_today()} calls left today")
+    maps_serper = SerperScraper() if use_serper_maps() else None
+    maps_max = int(os.getenv("SERPER_MAPS_MAX_QUERIES") or 8)
+    if maps_serper:
+        logger.info(f"Search source: Google Maps through Serper (up to {maps_max} queries)")
     osm = OSMLeadScraper() if use_osm() else None
     if osm:
         logger.info(f"Search source: OpenStreetMap, free (up to {osm.max_queries} queries)")
@@ -218,7 +252,7 @@ async def _scout_service(service_id: str, countries: List[str], keywords: List[s
     web_ok = False
     if serper:
         logger.info(f"Search source: Serper API (up to {serper_max} queries)")
-    elif not places and not osm:
+    elif not places and not osm and not maps_serper and source_ok("web"):
         reason = await search_engine_check()
         if reason:
             _blocked_note(svc.id, reason)
@@ -249,6 +283,12 @@ async def _scout_service(service_id: str, countries: List[str], keywords: List[s
                     leads = await places.search(kw, ctry, limit=20)
                 except Exception as e:
                     logger.warning(f"Google Maps search failed: {str(e)[:150]}")
+            if not leads and maps_serper and maps_serper.queries < maps_max:
+                try:
+                    leads = await maps_serper.search_maps(kw, ctry, limit=20)
+                except SerperUnavailable as e:
+                    logger.info(f"Google Maps through Serper stopped ({e}). The free credits are probably used up")
+                    maps_serper = None
             if not leads and osm and not osm.exhausted:
                 leads = await osm.search(kw, ctry, limit=20)
             if leads:
@@ -265,7 +305,8 @@ async def _scout_service(service_id: str, countries: List[str], keywords: List[s
                     logger.info(f"Serper stopped ({note}), carrying on with OpenStreetMap")
                     serper = None
             elif not web_ok:
-                if not (osm and not osm.exhausted) and not (places and places.calls_left_today() > 0):
+                if (not (osm and not osm.exhausted) and not (places and places.calls_left_today() > 0)
+                        and not (maps_serper and maps_serper.queries < maps_max)):
                     break  # every source used up for this run
             else:
                 await asyncio.sleep(random.uniform(4, 8))
