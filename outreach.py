@@ -329,6 +329,14 @@ async def send_blocker(lead: Dict[str, Any], verifier) -> Tuple[Optional[str], s
     if not emails:
         return "no email found", ""
     emails = [e.lower() for e in emails]
+    from scrapers.serper import foreign_tld
+    from lead_filter import junk_reason
+    if lead.get("domain") and foreign_tld(lead["domain"], lead.get("country") or ""):
+        # e.g. a .es business saved as Mexico because "León" also matched León in Spain (and Spain is a careful region)
+        return "website belongs to another country", emails[0]
+    junk = junk_reason(lead.get("name"), lead.get("domain"), lead.get("website"))
+    if junk == "big brand or marketplace":
+        return junk, emails[0]
     with get_connection() as conn:
         if is_domain_blacklisted(lead.get("domain"), conn):
             return "on the blacklist", emails[0]
