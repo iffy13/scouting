@@ -138,6 +138,12 @@ def _leads(service_id: str, status: str, limit: int, ids: Optional[List[int]] = 
             q = ",".join("?" * len(ids))
             return conn.execute(f"SELECT * FROM scout_leads WHERE service_id=? AND id IN ({q})", [service_id, *ids]).fetchall()
         where, args = "service_id=? AND status=?", [service_id, status]
+        from scout import lead_sources
+        allowed = lead_sources()
+        if allowed and status == "approved":
+            # LEAD_SOURCES: only first emails to leads from these sources (follow ups to earlier emails still go)
+            where += f" AND COALESCE(source,'web') IN ({','.join('?' * len(allowed))})"
+            args += allowed
         if countries is not None:
             if not countries:
                 return []
@@ -338,11 +344,36 @@ async def send_blocker(lead: Dict[str, Any], verifier) -> Tuple[Optional[str], s
         return stale, usable[0]
     verdicts = []
     for e in usable:
-        verdict = (await verifier.verify(e)).get("verdict")
-        if verdict == "valid":
+        result = await verifier.verify(e)
+        verdict = result.get("verdict")
+        if verdict == "valid" and _really_checked(result):
             return None, e
+        if verdict == "valid":
+            # Only "the domain accepts email" is known (no verifier credits, or port 25 closed on GitHub).
+            # That is how 19 of 236 emails bounced in October. Without a real check, only an address on the
+            # business's own domain goes out: an address copied from a site but hosted elsewhere is the kind that
+            # most often no longer exists. VERIFY_REQUIRED=true sends nothing that was not really checked.
+            if os.getenv("VERIFY_REQUIRED", "").lower() in ("true", "1", "yes"):
+                verdicts.append("not checked (VERIFY_REQUIRED)")
+                continue
+            if _same_domain(e, lead.get("domain")):
+                return None, e
+            verdicts.append("not checked and not on the business's own domain")
+            continue
         verdicts.append(verdict)
     return f"email check says {'/'.join(verdicts)}", usable[0]
+
+
+def _really_checked(result: Dict[str, Any]) -> bool:
+    """True when a verifier or a mail server confirmed the mailbox, not just the domain's MX records."""
+    reason = str(result.get("reason") or "")
+    return not (reason.startswith("mx_records_verified") or reason.startswith("mx_trusted_provider"))
+
+
+def _same_domain(email: str, domain: Optional[str]) -> bool:
+    host = email.rsplit("@", 1)[-1].lower()
+    d = (domain or "").lower().removeprefix("www.")
+    return bool(d) and (host == d or host.endswith("." + d) or d.endswith("." + host))
 
 
 async def cmd_send(service_id: str, limit: int):

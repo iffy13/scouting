@@ -293,7 +293,7 @@ def maps_fit(lead: Dict[str, Any], service_id: str) -> Tuple[int, List[str], Opt
             pts += 5
             ev.append("busy enough to get many customer messages")
     elif service_id == "render_3d":
-        if photos <= 3:
+        if photos is not None and photos <= 3:
             pts += 10
             ev.append("few project photos on Google Maps")
         if rating is not None and rating >= 4.3:
