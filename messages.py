@@ -120,7 +120,8 @@ def _local_footer(lang: str, country: Optional[str] = None) -> str:
     import localize
     import outreach
     return localize.footer(lang, outreach.SENDER_NAME, outreach.SENDER_TITLE, outreach.BUSINESS_NAME,
-                           outreach.POSTAL_ADDRESS if outreach.address_needed(country) else "")
+                           outreach.POSTAL_ADDRESS if outreach.address_needed(country) else "",
+                           opt_out=outreach.opt_out_needed(country))
 
 
 def _local(service_id: str, lead: Dict[str, Any], first_subject: Optional[str] = None) -> Optional[Tuple[str, str]]:

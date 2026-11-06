@@ -405,11 +405,17 @@ def _hello(lang: str, name: Optional[str], owner: Optional[str] = None) -> str:
     return with_name.format(name=name) if name and len(name) <= 30 else plain
 
 
-def footer(lang: str, sender: str, title: str, business: str, postal: str) -> str:
-    t = TITLES.get((title or "").strip().lower(), {}).get(lang, title)
-    comma = "، " if lang == "ar" else ", "
-    lines = [sender, f"{t}{comma}{business}" if t else business, postal]
-    return "\n".join(l for l in lines if l) + "\n\n" + OPT_OUT_LINE[lang]
+def footer(lang: str, sender: str, title: str, business: str, postal: str, opt_out: bool = False) -> str:
+    """First name only, like a person wrote it. The opt out sentence only where the law asks (opt_out=True), and the
+    business name with the postal address only when a postal address is passed."""
+    first = (sender or "").split()[0] if (sender or "").split() else sender
+    out = ""
+    if opt_out:
+        out += OPT_OUT_LINE[lang] + "\n\n"
+    out += first
+    if postal:
+        out += "\n" + ", ".join(x for x in (business, postal) if x)
+    return out
 
 
 def build_first(lang: str, service_id: str, name: Optional[str], evidence: str, seed: str,

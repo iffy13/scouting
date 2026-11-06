@@ -67,22 +67,36 @@ def address_needed(country: Optional[str]) -> bool:
     return (country or "").upper() in codes
 
 
+def opt_out_needed(country: Optional[str]) -> bool:
+    """Markets whose cold email rules ask for a simple way to opt out (US, Canada, Australia, New Zealand, Singapore).
+    Elsewhere the first email carries no opt out sentence. Replies saying no are still honoured everywhere.
+    OPT_OUT_COUNTRIES changes the list."""
+    raw = os.getenv("OPT_OUT_COUNTRIES")
+    codes = {c.strip().upper() for c in (raw if raw is not None else "US,CA,AU,NZ,SG").split(",") if c.strip()}
+    return (country or "").upper() in codes
+
+
+def first_name() -> str:
+    parts = (SENDER_NAME or "").split()
+    return parts[0] if parts else SENDER_NAME
+
+
 def footer(country: Optional[str] = "US") -> str:
-    """Professional plain text signature: name, role, business, website, postal address (only where the law asks
-    for it, see address_needed), then the opt out line."""
-    lines = [SENDER_NAME, f"{SENDER_TITLE}, {BUSINESS_NAME}" if SENDER_TITLE else BUSINESS_NAME]
-    # No link in cold emails by default: a URL in a first email from a new mailbox is one of the strongest spam signals.
-    # The website is still used when you reply by hand. WEBSITE_IN_EMAILS=true puts it back in the signature.
-    if website_text() and os.getenv("WEBSITE_IN_EMAILS", "").lower() in ("true", "1", "yes"):
-        lines.append(website_text())
+    """Looks like a person wrote it: first name only. Where the law asks for it, a plain opt out sentence above the
+    name (US, Canada, Australia, New Zealand, Singapore) and the business name with the postal address (US, Canada)
+    under it. A business block, a title and a 'reply stop' line read as a newsletter and push mail to Promotions."""
+    out = "\n"
+    if opt_out_needed(country):
+        out += OPT_OUT_LINE + "\n\n"
+    out += first_name()
     if address_needed(country):
-        lines.append(POSTAL_ADDRESS)
-    return "\n" + "\n".join(l for l in lines if l) + "\n\n" + OPT_OUT_LINE
+        out += "\n" + ", ".join(x for x in (BUSINESS_NAME, POSTAL_ADDRESS) if x)
+    return out
 
 
-# Plain, personal wording. Mail filters read "unsubscribe"/"reply STOP" footers as newsletter signs (Promotions).
-# "no" on its own is still read as an opt out (JUST_NO), as are "stop", "unsubscribe" and "not interested".
-OPT_OUT_LINE = os.getenv("OPT_OUT_LINE") or "If this isn't for you, just reply \"no\" and I won't write again."
+# One plain sentence in the body voice. "no", "stop", "unsubscribe" and "not interested" replies are still read as opt
+# outs by classify_reply, so any of those still stops all further emails to that business.
+OPT_OUT_LINE = os.getenv("OPT_OUT_LINE") or "If this isn't relevant, just tell me and I'll leave you alone."
 
 
 def build_message(service_id: str, lead: Dict[str, Any]) -> Tuple[str, str]:
