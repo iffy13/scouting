@@ -300,8 +300,8 @@ def daily(a):
             asyncio.run(send_paced.run(sid, a.send_limit, lo, hi, True, countries=open_now))
         except SystemExit as e:
             reason = str(e)
-            # a full daily cap is normal; a missing or disconnected mailbox is a setup problem
-            is_config = not reason.startswith("Daily cap")
+            # a full daily cap or a used up per service share is normal; a missing or disconnected mailbox is a setup problem
+            is_config = not (reason.startswith("Daily cap") or "already sent its share" in reason)
             stop_note(sid, reason, config=is_config)
             if is_config:
                 config_problems.append(reason)
