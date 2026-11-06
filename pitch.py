@@ -45,143 +45,121 @@ def flags(evidence_text: str) -> set:
 # the outcome not the tech, and one low-effort question at the end (interest, not a meeting).
 REC_HOOKS = {
     "ads": [
-        "Saw that {name} runs online ads. That makes every missed call a paid lead walking over to a competitor.",
-        "{name} is paying for ads, which really means paying for phone calls. The ones nobody picks up usually "
-        "book with whoever answers next.",
+        "Saw that {name} runs online ads. Who answers the phone when those turn into calls?",
+        "{name} is paying for ads, so I wondered who picks up when someone calls.",
     ],
     "calls_only": [
-        "Your website sends every new customer to the phone. No booking form, no chat. So when nobody can pick up, "
-        "that job usually goes to whoever answers next.",
-        "On your site the phone is the only way in. That works right up until you're busy and the next customer "
-        "hears voicemail and hangs up.",
+        "Your website sends new customers to the phone. Who answers when everyone is busy?",
+        "On your site the phone is the only way in. What happens to the calls nobody can pick up?",
     ],
     "busy": [
-        "With the reviews {name} has, the phone must ring a lot, often while you're out on a job.",
+        "Looks like the phone must ring a lot at {name}. Who picks up when everyone is busy?",
     ],
 }
 REC_NICHE_HOOKS = {
     "trades": [
-        "Most people with an urgent problem call the first company they find. If nobody picks up, they ring the next "
-        "one within a minute.",
-        "When you're up a ladder or under a sink, you can't answer the phone. That's exactly when new customers call.",
+        "Quick question: who answers the phone when you are on a job?",
+        "When you are busy on a job, what happens to the calls that come in?",
     ],
     "restoration": [
-        "When water is coming through a ceiling at 10pm, people keep calling until someone answers. The first company "
-        "to pick up usually gets the job.",
+        "Quick question: who answers when an urgent call comes in at night?",
     ],
     "dental": [
-        "When a new patient calls and gets voicemail, most don't leave a message. They book with the next practice.",
-        "The front desk can't answer the phone while checking someone in, and new patients rarely call back.",
+        "Quick question: who answers new patient calls when the front desk is busy?",
+        "What happens to a new patient's call over lunch or after closing?",
     ],
     "legal": [
-        "Most people looking for a lawyer call two or three firms. The first one that answers usually gets the case.",
+        "Quick question: who answers a new enquiry when everyone is with a client?",
     ],
     "default": [
-        "Most customers who hit voicemail don't leave a message. They just call someone else.",
+        "Quick question: who answers the phone when everyone is busy?",
     ],
 }
 REC_OFFERS = [
-    "I set up AI receptionists that answer every call in your business name, day or night, and text you the "
-    "caller's details within a minute.",
-    "I build AI receptionists that pick up when your team can't, take down the job, and send you a short summary "
-    "straight away.",
+    "I set up an AI assistant that answers those calls, takes the caller's details and sends them to you.",
+    "I build a phone assistant that picks up when your team cannot and texts you who called and why.",
 ]
 REC_CLOSERS = [
-    "Want me to send a 60 second sample call so you can hear it?",
-    "Is this a problem for you, or is the phone already covered?",
-    "Worth a quick look?",
-    "How are you handling the calls you can't pick up right now?",
+    "Would a short sample call be useful?",
+    "Happy to show how it would work for {name} if useful.",
+    "Would that be useful?",
 ]
 REC_SUBJECTS = {
-    "default": ["missed calls at {name}", "after-hours calls", "calls you can't pick up",
-                "quick question about your phones"],
-    "dental": ["new patient calls at {name}", "calls during busy hours", "quick question about your phones"],
-    "legal": ["first calls from new clients", "missed enquiries at {name}", "quick question about your phones"],
+    "default": ["missed calls at {name}", "quick question", "your phones"],
+    "dental": ["new patient calls", "quick question", "your phones"],
+    "legal": ["new client calls", "quick question", "your phones"],
 }
 
 # --------------------------------------------------------------------------- whatsapp
+# Same shape as a short note from a person: one question, one plain sentence about what you do, one soft ask.
+# No feature lists, no "official API" wording, no selling lines. That is what keeps it in the Primary tab.
 WA_HOOKS = {
     "wa_link": [
-        "Your site sends customers straight to WhatsApp. Great, until ten chats arrive at once and they all land on "
-        "one person's phone.",
-        "Saw the WhatsApp button on your site. On busy days and after hours, those chats wait, and that's usually "
-        "when customers move on.",
+        "Saw the WhatsApp button on your site. Who answers those chats when the team is busy?",
+        "Your site sends people to WhatsApp. Who answers when several chats come in at once?",
     ],
     "ads": [
-        "{name} is running ads, and a lot of those clicks turn into WhatsApp chats. Every hour a chat waits, the sale "
-        "gets less likely.",
+        "{name} runs ads, so I wondered who answers the WhatsApp chats that come from them.",
     ],
     "commerce_no_chat": [
-        "Customers can buy or book on your site, but there's no instant answer when they have a quick question. "
-        "That's where a lot of them drop off.",
+        "People can buy or book on your site. Who answers when they have a quick question?",
     ],
     "wa_mention": [
-        "Saw that {name} takes enquiries on WhatsApp. Customers there expect a reply in minutes, not hours.",
+        "Saw that {name} takes enquiries on WhatsApp. Who answers them when the team is busy or closed?",
     ],
 }
 WA_GENERIC_HOOKS = [
-    "Most customers would rather send a WhatsApp than call, and they expect a reply in minutes. Slow answers quietly "
-    "lose sales.",
-    "A customer who messages on WhatsApp and waits hours for an answer has usually bought elsewhere by the time "
-    "someone replies.",
+    "Quick question: who answers your WhatsApp messages when the team is busy or closed?",
+    "Quick question: what happens to a WhatsApp message that arrives at night?",
 ]
 WA_OFFERS = [
-    "I set up the official WhatsApp Business API: one number your whole team answers from, plus instant automatic "
-    "replies to common questions like prices, hours and bookings, day or night.",
-    "I set up the official WhatsApp Business API, so your team shares one inbox and routine questions get answered "
-    "automatically, even at 2am.",
+    "I set up WhatsApp for businesses so a team shares one number and common questions get answered automatically.",
+    "I help businesses set up WhatsApp so the whole team answers from one number and routine questions get an automatic reply.",
 ]
 WA_CLOSERS = [
-    "Who handles your WhatsApp chats right now?",
-    "Worth a quick look?",
-    "Is this something you've been meaning to sort out?",
+    "Happy to show how it would work for {name} if useful.",
+    "Would that be useful?",
+    "Is that something you would want to look at?",
 ]
 WA_SUBJECTS = {
-    "default": ["WhatsApp at {name}", "slow WhatsApp replies", "quick question about WhatsApp"],
-    "wa_link": ["your WhatsApp chats", "the WhatsApp button on your site", "quick question about WhatsApp"],
+    "default": ["whatsapp chats", "quick question", "whatsapp at {name}"],
+    "wa_link": ["your whatsapp chats", "the whatsapp button", "quick question"],
 }
 
 # --------------------------------------------------------------------------- 3D renders
 R3_HOOKS = {
     "prebuild": [
-        "Saw that {name} has projects that aren't built yet. Buyers commit faster when they can see the finished "
-        "space, not just a plan.",
-        "Getting a yes on a project that only exists on paper is hard, and that's where a lot of deals stall.",
+        "Saw that {name} has projects that are not built yet. Do clients find it hard to picture the finished space?",
     ],
     "renders": [
-        "Saw you already use visuals in your presentations. When your usual artist is booked up, a reliable second "
-        "option keeps projects moving.",
+        "Saw you already use visuals in your presentations. Is there room for a second person on renders when your usual artist is booked?",
     ],
     "portfolio": [
-        "Your finished projects look great. The catch is that the next client has to say yes before there's anything "
-        "to photograph.",
+        "Your finished projects look good. Do you have anything to show clients before the next one is built?",
     ],
 }
 R3_NICHE_HOOKS = {
-    "interior": ["Most clients struggle to picture a room from a mood board or a floor plan, and that doubt slows "
-                 "sign-off."],
-    "architect": ["A lot of clients can't really read drawings, so they hesitate, or ask for changes late when "
-                  "changes cost the most."],
-    "builder": ["Homeowners find it hard to commit to a build they can't picture, so decisions drag on."],
-    "remodel": ["Homeowners find it hard to say yes to a kitchen or bathroom they can't picture."],
-    "developer": ["Off-plan buyers hesitate when all they have is a floor plan and a promise."],
-    "landscape": ["Clients rarely picture a garden or pool design from a sketch, so saying yes is hard."],
-    "default": ["Clients find it hard to say yes to a space they can't picture, so decisions drag on."],
+    "interior": ["Quick question: do your clients find it hard to picture a room from a mood board?"],
+    "architect": ["Quick question: do clients struggle to read your drawings?"],
+    "builder": ["Quick question: do homeowners find it hard to picture a build before it starts?"],
+    "remodel": ["Quick question: do homeowners find it hard to picture a new kitchen or bathroom?"],
+    "developer": ["Quick question: do off plan buyers hesitate when all they have is a floor plan?"],
+    "landscape": ["Quick question: do clients find it hard to picture a garden from a sketch?"],
+    "default": ["Quick question: do your clients find it hard to picture the finished space?"],
 }
 R3_OFFERS = [
-    "I create realistic 3D renders of interiors and exteriors from your plans or sketches, so clients see exactly "
-    "what they're getting and decide faster.",
-    "I turn plans and sketches into realistic 3D renders, so your clients see the finished space before work starts.",
+    "I make 3D renders of interiors and exteriors from plans or sketches, so clients can see the result before work starts.",
+    "I turn plans and sketches into 3D renders, so clients see the finished space before work starts.",
 ]
 R3_CLOSERS = [
-    "Want to see a couple of recent examples?",
-    "Got a project coming up where this would help?",
-    "Worth a quick look?",
+    "Happy to share a couple of examples if useful.",
+    "Do you have a project coming up where that would help?",
+    "Would that be useful?",
 ]
 R3_SUBJECTS = {
-    "default": ["renders for {name}", "visuals before it's built", "your next client presentation"],
-    "developer": ["selling projects before they're built", "visuals for off-plan buyers", "renders for {name}"],
-    "prebuild": ["your upcoming projects", "visuals before it's built", "renders for {name}"],
+    "default": ["renders for {name}", "quick question", "visuals before it is built"],
+    "developer": ["off plan visuals", "quick question", "renders for {name}"],
+    "prebuild": ["your upcoming projects", "quick question", "renders for {name}"],
 }
 
 
@@ -242,8 +220,8 @@ def build(service: str, niche: str, name: str, owner_name: Optional[str], countr
     parts = [hook, _pick(offers, seed, "offer", ok), _pick(closers, seed, "closer", ok)]
     body = "\n\n".join(p.format(name=shown) for p in parts if p)
     hello = greeting(owner_name, country)
-    if hello == "Hello," and ok and len(shown) <= 30:
-        hello = f"Hi {shown} team,"  # warmer than a bare "Hello," when we know the business but not a person
+    if hello == "Hello,":
+        hello = "Hi,"  # "Hi Larry team," reads like a mail merge; a plain "Hi," reads like a person
     return subject, f"{hello}\n\n{body}"
 
 
