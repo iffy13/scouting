@@ -71,12 +71,12 @@ CITIES: Dict[str, List[str]] = {
     "OM": ["Muscat", "Sohar", "Salalah"],
     "SG": ["Singapore"],
     "MY": ["Kuala Lumpur", "Petaling Jaya", "Penang", "Johor Bahru", "Shah Alam", "Ipoh"],
-    "MX": ["Ciudad de México", "Monterrey", "Guadalajara", "Querétaro", "Puebla", "Mérida", "León", "Tijuana"],
+    "MX": ["Ciudad de México", "Monterrey", "Guadalajara", "Querétaro", "Puebla", "Mérida", "León, Guanajuato", "Tijuana"],
     "BR": ["São Paulo", "Rio de Janeiro", "Belo Horizonte", "Curitiba", "Porto Alegre", "Brasília",
            "Florianópolis", "Campinas", "Goiânia", "Recife"],
     "CO": ["Bogotá", "Medellín", "Cali", "Barranquilla", "Bucaramanga"],
-    "AR": ["Buenos Aires", "Córdoba", "Rosario", "Mendoza"],
-    "CL": ["Santiago", "Viña del Mar", "Concepción"],
+    "AR": ["Buenos Aires", "Córdoba, Argentina", "Rosario", "Mendoza"],
+    "CL": ["Santiago de Chile", "Viña del Mar", "Concepción, Chile"],
     "ZA": ["Johannesburg", "Cape Town", "Durban", "Pretoria", "Port Elizabeth", "Sandton"],
 }
 
