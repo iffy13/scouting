@@ -90,40 +90,40 @@ REC_SUBJECTS = {
     "legal": ["new client calls", "quick question", "your phones"],
 }
 
-# --------------------------------------------------------------------------- whatsapp
-# Same shape as a short note from a person: one question, one plain sentence about what you do, one soft ask.
-# No feature lists, no "official API" wording, no selling lines. That is what keeps it in the Primary tab.
+# --------------------------------------------------------------------------- meta setup (the whatsapp_api lane)
+# This lane now sells Meta business verification and WhatsApp Business API setup. Same shape as a short note from a
+# person: one question, one plain sentence about what you do, one soft ask. No feature lists, no selling lines.
 WA_HOOKS = {
     "wa_link": [
-        "Saw the WhatsApp button on your site. Who answers those chats when the team is busy?",
-        "Your site sends people to WhatsApp. Who answers when several chats come in at once?",
+        "Saw the WhatsApp button on your site. Is that chat running on a regular WhatsApp number?",
+        "Your site sends people to WhatsApp. Is that number set up as a verified business account with Meta?",
     ],
     "ads": [
-        "{name} runs ads, so I wondered who answers the WhatsApp chats that come from them.",
+        "{name} runs ads, so I wondered if the business is already verified with Meta. It affects how many WhatsApp messages you can send.",
     ],
     "commerce_no_chat": [
-        "People can buy or book on your site. Who answers when they have a quick question?",
+        "People can buy or book on your site. Do customers have a verified WhatsApp number they can message?",
     ],
     "wa_mention": [
-        "Saw that {name} takes enquiries on WhatsApp. Who answers them when the team is busy or closed?",
+        "Saw that {name} takes enquiries on WhatsApp. Is it on the business API with a verified Meta account, or a regular number?",
     ],
 }
 WA_GENERIC_HOOKS = [
-    "Quick question: who answers your WhatsApp messages when the team is busy or closed?",
-    "Quick question: what happens to a WhatsApp message that arrives at night?",
+    "Quick question: is your business verified with Meta yet?",
+    "Quick question: is your WhatsApp number on the business API, or a regular WhatsApp account?",
 ]
 WA_OFFERS = [
-    "I set up WhatsApp for businesses so a team shares one number and common questions get answered automatically.",
-    "I help businesses set up WhatsApp so the whole team answers from one number and routine questions get an automatic reply.",
+    "I handle Meta business verification and the WhatsApp Business API setup, so the number is approved and ready to connect to your tools.",
+    "I set up the Meta business account and the WhatsApp API for businesses, including the verification step that often gets rejected.",
 ]
 WA_CLOSERS = [
-    "Happy to show how it would work for {name} if useful.",
+    "Happy to check what is missing on your side if useful.",
+    "Happy to look at {name}'s setup if useful.",
     "Would that be useful?",
-    "Is that something you would want to look at?",
 ]
 WA_SUBJECTS = {
-    "default": ["whatsapp chats", "quick question", "whatsapp at {name}"],
-    "wa_link": ["your whatsapp chats", "the whatsapp button", "quick question"],
+    "default": ["meta verification", "whatsapp number", "quick question"],
+    "wa_link": ["your whatsapp number", "the whatsapp button", "quick question"],
 }
 
 # --------------------------------------------------------------------------- 3D renders

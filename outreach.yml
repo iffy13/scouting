@@ -1,0 +1,119 @@
+name: Outreach autopilot
+
+on:
+  schedule:
+    # Each run only emails the countries where it is a working day and 08:00 to 17:00 local time (safety.py),
+    # so the times below are picked to reach each region in its morning or early afternoon.
+    # Days run Sunday to Friday (0-5) where Gulf countries with a Sunday to Thursday week are involved; the code
+    # skips any country whose weekend it is.
+    # Odd minutes on purpose: GitHub drops many scheduled runs at :00 and :30, when everyone's crons fire.
+    - cron: "7 6 * * 0-5"    # WhatsApp: Gulf 09:07-10:07, Singapore and Malaysia 14:07
+    - cron: "13 9 * * 0-5"   # WhatsApp: Gulf 12:13-13:13 (third run, so WhatsApp also reaches 30 a day)
+    - cron: "41 10 * * 0-5"  # WhatsApp: Gulf 13:41-14:41
+    - cron: "17 15 * * 1-5"  # WhatsApp: Latin America (Mexico 09:17, Colombia 10:17, Chile 11:17, Brazil 12:17)
+  workflow_dispatch:
+    inputs:
+      service:
+        description: "Which service to run"
+        type: choice
+        options: [whatsapp_api, receptionist, render_3d, lead_gen]
+        default: whatsapp_api
+      dry_run:
+        description: "Show the plan only, do nothing"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: outreach-data
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      BUSINESS_NAME: ${{ secrets.BUSINESS_NAME }}
+      POSTAL_ADDRESS: ${{ secrets.POSTAL_ADDRESS }}
+      SENDER_NAME: ${{ secrets.SENDER_NAME }}
+      SENDER_TITLE: ${{ vars.SENDER_TITLE || 'Founder' }}
+      WEBSITE_URL: ${{ vars.WEBSITE_URL }}
+      WEBSITE_IN_EMAILS: ${{ vars.WEBSITE_IN_EMAILS || 'false' }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      DB_PASSPHRASE: ${{ secrets.DB_PASSPHRASE }}
+      MILLION_VERIFIER_API_KEY: ${{ secrets.MILLION_VERIFIER_API_KEY }}
+      BOUNCE_LIMIT_PCT: ${{ vars.BOUNCE_LIMIT_PCT || '8' }}
+      BOUNCE_RESET_AT: ${{ vars.BOUNCE_RESET_AT }}
+      MAILBOX_MAP_JSON: ${{ secrets.MAILBOX_MAP_JSON }}
+      SMTP_ACCOUNTS_JSON: ${{ secrets.SMTP_ACCOUNTS_JSON }}
+      ACCOUNT_WHATSAPP_JSON: ${{ secrets.ACCOUNT_WHATSAPP_JSON }}
+      ACCOUNT_RECEPTIONIST_JSON: ${{ secrets.ACCOUNT_RECEPTIONIST_JSON }}
+      ACCOUNT_BOOKS_JSON: ${{ secrets.ACCOUNT_BOOKS_JSON }}
+      SCOUT_DAILY_CAP: ${{ vars.SCOUT_DAILY_CAP || '30' }}
+      MAILBOX_DAILY_CAP: ${{ vars.MAILBOX_DAILY_CAP || '70' }}
+      # Week-by-week limit for a new mailbox (15, 25, 40, 55, then MAILBOX_DAILY_CAP). Set the variable to "off"
+      # to send MAILBOX_DAILY_CAP from day one (not advised on a domain younger than a month).
+      WARMUP_STEPS: ${{ vars.WARMUP_STEPS || '15,25,40,55' }}
+      LOCAL_LANGUAGES: ${{ vars.LOCAL_LANGUAGES }}
+      OUTREACH_PAUSED: ${{ vars.OUTREACH_PAUSED || 'false' }}
+      # Each send run scouts first when its queue is running low (fewer than SCOUT_BACKLOG_MAX approved leads
+      # waiting), then sends. A full queue skips scouting, so no Serper credits are spent for nothing.
+      AP_SCOUT_MAX: ${{ vars.AP_SCOUT_MAX || '10' }}
+      SCOUT_BACKLOG_MAX: ${{ vars.SCOUT_BACKLOG_MAX || '40' }}
+      SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
+      GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+      PLACES_DAILY_CALLS: ${{ vars.PLACES_DAILY_CALLS || '30' }}
+      OSM_MAX_QUERIES: ${{ vars.OSM_MAX_QUERIES || '6' }}
+      # Only leads from these sources are scouted and get a first email. "google_maps" = Google Maps, through the
+      # Places API when GOOGLE_PLACES_API_KEY is set, otherwise through Serper (no card needed).
+      # Set the variable to "all" for every source (OpenStreetMap, web search), the old behaviour.
+      LEAD_SOURCES: ${{ vars.LEAD_SOURCES || 'google_maps' }}
+      SERPER_MAPS_MAX_QUERIES: ${{ vars.SERPER_MAPS_MAX_QUERIES || '8' }}
+      VERIFY_REQUIRED: ${{ vars.VERIFY_REQUIRED || 'false' }}
+      SERPER_MAX_QUERIES: ${{ vars.SERPER_MAX_QUERIES || '6' }}
+      AP_SEND_LIMIT: ${{ vars.AP_SEND_LIMIT || '10' }}  # 3 runs per service x 10 = 30 a day per mailbox
+      AP_FOLLOWUP_LIMIT: ${{ vars.AP_FOLLOWUP_LIMIT || '4' }}
+      # Minutes between two emails, picked at random in this range so sending looks human, not like a burst.
+      AP_MIN_GAP: ${{ vars.AP_MIN_GAP || '5' }}
+      AP_MAX_GAP: ${{ vars.AP_MAX_GAP || '10' }}
+      DEMO_LINK: ${{ vars.DEMO_LINK }}
+      DATA_REMOTE: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install packages
+        run: pip install -r requirements.txt
+      - name: Write mailbox files from secrets
+        run: |
+          printf '%s' "$MAILBOX_MAP_JSON" > mailbox_map.json
+          python autopilot.py --prepare
+      - name: Restore database
+        run: bash ci/data_sync.sh restore
+      - name: Pick service
+        id: pick
+        run: |
+          s="${{ github.event.inputs.service }}"
+          if [ -z "$s" ]; then
+            case "${{ github.event.schedule }}" in
+              "7 14 * * 1-5"|"41 18 * * 1-5"|"7 22 * * 0-4") s=receptionist ;;
+              "7 8 * * 0-5"|"7 20 * * 1-5"|"37 23 * * 0-4"|"47 16 * * 1-5") s=render_3d ;;
+              "23 4 * * 1-5"|"23 12 * * 0-5"|"3 16 * * 1-5") s=lead_gen ;;
+              *) s=whatsapp_api ;;
+            esac
+          fi
+          echo "Service for this run: $s"
+          echo "service=$s" >> "$GITHUB_OUTPUT"
+      - name: Run autopilot
+        run: >
+          python autopilot.py
+          --service ${{ steps.pick.outputs.service }}
+          ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+      - name: Save database
+        if: always()
+        run: bash ci/data_sync.sh save
