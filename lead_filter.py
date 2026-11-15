@@ -12,6 +12,8 @@ import sys
 from typing import Iterable, List, Optional
 
 GIANTS = (
+    # Latin American delivery and marketplace platforms (a restaurant's Maps "website" is often its Rappi page)
+    "rappi.", "pedidosya", "ifood.", "didi-food", "didifood", "mercadolibre", "mercadolivre", "linktr.ee",
     "amazon.", "noon.com", "ubereats", "glovo", "deliveroo", "talabat", "careem", "jumia", "alibaba", "aliexpress",
     "ebay.", "shopify.com", "wix.com", "etsy.com", "walmart.", "temu.", "shein.", "zalando", "booking.com",
     "airbnb", "expedia", "justeat", "foodpanda", "doordash", "grubhub", "menuintegrado", "olx.", "dubizzle",

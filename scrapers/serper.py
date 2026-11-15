@@ -72,6 +72,8 @@ class SerperScraper(BaseScraper):
             lead = maps_place_to_lead(p, keyword, ctry, city or country_name)
             if not lead or lead["domain"] in seen or not is_valid_prospect_domain(lead["domain"], lead["website"]):
                 continue
+            if foreign_tld(lead["domain"], ctry):
+                continue  # e.g. a .es restaurant when "León" matched León in Spain
             seen.add(lead["domain"])
             out.append(lead)
             if len(out) >= limit:
@@ -158,3 +160,21 @@ def maps_place_to_lead(p: Dict[str, Any], keyword: str, country: str, city: str)
             "open_24h": "24 hours" in hour_text or "open 24" in hour_text,
         },
     }
+
+
+# Country-code domains: a business in this country with another country's code is almost always a wrong match
+# (same city name elsewhere). Generic domains (.com, .net, .io...) are always kept.
+CC_TLDS = {"US": "us", "CA": "ca", "AU": "au", "NZ": "nz", "AE": "ae", "SA": "sa", "QA": "qa", "KW": "kw",
+           "BH": "bh", "OM": "om", "SG": "sg", "MY": "my", "HK": "hk", "PH": "ph", "IN": "in", "NG": "ng",
+           "GH": "gh", "KE": "ke", "MX": "mx", "BR": "br", "CO": "co", "AR": "ar", "CL": "cl", "UK": "uk",
+           "IE": "ie", "ES": "es", "PT": "pt", "FR": "fr", "DE": "de", "IT": "it", "PE": "pe", "VE": "ve",
+           "EC": "ec", "ZA": "za"}
+LOOSE_TLDS = {"co", "io", "ai", "me", "tv"}  # used worldwide as generic endings
+
+
+def foreign_tld(domain: str, country: str) -> bool:
+    tld = domain.rsplit(".", 1)[-1].lower()
+    if tld in LOOSE_TLDS and tld != CC_TLDS.get(country.upper()):
+        return False
+    owners = [c for c, t in CC_TLDS.items() if t == tld]
+    return bool(owners) and country.upper() not in owners
