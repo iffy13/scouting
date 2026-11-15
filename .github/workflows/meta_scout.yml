@@ -1,0 +1,57 @@
+name: Meta scout
+
+# Finds public posts from people with a Meta business problem and sends the best ones to your Telegram.
+# Never sends anything to anyone. Runs even when OUTREACH_PAUSED is true, because it only reads and alerts.
+on:
+  schedule:
+    - cron: "17 5 * * *"    # about 06:17 Lagos time
+    - cron: "17 13 * * *"   # about 14:17 Lagos time
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (print only, save nothing)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: meta-scout
+  cancel-in-progress: false
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      META_SCOUT_WINDOW: ${{ vars.META_SCOUT_WINDOW || 'w' }}
+      META_SCOUT_MAX_ALERTS: ${{ vars.META_SCOUT_MAX_ALERTS || '8' }}
+      META_SCOUT_MAX_QUERIES: ${{ vars.META_SCOUT_MAX_QUERIES || '14' }}
+      META_SCOUT_EXTRA: ${{ vars.META_SCOUT_EXTRA }}
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Restore what was already seen
+        uses: actions/cache@v4
+        with:
+          path: meta_scout_state
+          key: meta-scout-${{ github.run_id }}
+          restore-keys: meta-scout-
+      - name: Run Meta scout
+        run: python meta_scout.py
+      - name: Keep today's leads for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: leads-${{ github.run_id }}
+          path: leads_today.json
+          retention-days: 14
+          if-no-files-found: ignore
