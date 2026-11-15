@@ -19,6 +19,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -29,15 +30,16 @@ TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TG_CHAT = os.getenv("TELEGRAM_CHAT_ID", "")
 ANTHROPIC_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 MODEL = os.getenv("META_SCOUT_MODEL", "claude-haiku-5-5")
-WINDOW = os.getenv("META_SCOUT_WINDOW", "w")          # d = last day, w = last week, m = last month
-MAX_QUERIES = int(os.getenv("META_SCOUT_MAX_QUERIES", "14"))
-MAX_ALERTS = int(os.getenv("META_SCOUT_MAX_ALERTS", "8"))
+WINDOW = os.getenv("META_SCOUT_WINDOW", "d")          # d = last day, w = last week, m = last month
+MAX_QUERIES = int(os.getenv("META_SCOUT_MAX_QUERIES", "40"))
+MAX_ALERTS = int(os.getenv("META_SCOUT_MAX_ALERTS", "15"))
 MIN_SCORE = int(os.getenv("META_SCOUT_MIN_SCORE", "4"))
 STATE_DIR = os.getenv("META_SCOUT_STATE", "meta_scout_state")
 DRY = os.getenv("DRY_RUN", "").lower() in ("1", "true", "yes") or "--dry" in sys.argv
 
 # (search, what kind of lead it usually finds). Add your own with META_SCOUT_EXTRA, one per line as: type|search
 QUERIES = [
+    # Reddit
     ('site:reddit.com "whatsapp business api" restricted OR rejected OR banned OR suspended', "RESCUE"),
     ('site:reddit.com "business verification" meta rejected OR failed OR stuck', "VERIFY"),
     ('site:reddit.com whatsapp "display name" rejected OR declined', "VERIFY"),
@@ -46,12 +48,33 @@ QUERIES = [
     ('site:reddit.com "whatsapp business api" "looking for" OR "need someone" OR hire setup', "BUILD"),
     ('site:reddit.com whatsapp api pricing "per message" confused OR expensive OR cost', "COST"),
     ('site:reddit.com "green tick" OR "official business account" whatsapp how', "VERIFY"),
+    ('site:reddit.com "ad account" disabled "business verification" meta', "RESCUE"),
+    ('site:reddit.com/r/FacebookAds "business verification" OR whatsapp help', "RESCUE"),
+    ('site:reddit.com/r/n8n whatsapp business api verification OR restricted', "SETUP"),
+    ('site:reddit.com/r/shopify whatsapp business api OR "meta verification"', "SETUP"),
+    # Meta's own community forums, where people post when support fails them
+    ('site:developers.facebook.com/community whatsapp "business verification" stuck OR rejected OR loop', "VERIFY"),
+    ('site:developers.facebook.com/community whatsapp restricted OR banned OR disabled OR suspended', "RESCUE"),
+    ('site:communityforums.atmeta.com "business verification" OR whatsapp restricted OR stuck', "VERIFY"),
+    ('site:developers.facebook.com/community "display name" whatsapp rejected OR pending', "VERIFY"),
+    # Tool and platform forums where businesses hit the Meta wall while connecting something
+    ('site:community.n8n.io "whatsapp business" restricted OR verification OR "not approved"', "RESCUE"),
+    ('site:community.make.com whatsapp business verification OR restricted OR error', "SETUP"),
+    ('site:community.zapier.com whatsapp business api setup OR verification', "SETUP"),
+    ('site:community.shopify.com whatsapp business api OR "meta business verification"', "SETUP"),
+    ('site:community.hubspot.com whatsapp business verification OR restricted', "SETUP"),
+    ('site:forum.bubble.io whatsapp business api setup OR verification', "SETUP"),
+    ('site:jotform.com/answers whatsapp meta business verification OR restricted', "RESCUE"),
+    # Job boards (people paying right now)
+    ('site:freelancer.com/projects "whatsapp business api" OR "meta business verification"', "BUILD"),
+    ('site:peopleperhour.com "whatsapp business api" OR "meta business verification"', "BUILD"),
+    # Social and Q and A
+    ('site:x.com "whatsapp business" restricted OR "verification rejected" OR "banned"', "RESCUE"),
     ('site:quora.com "whatsapp business api" verification OR approval OR restricted', "VERIFY"),
     ('site:stackoverflow.com "whatsapp cloud api" "business verification" OR restricted OR "not approved"', "RESCUE"),
     ('site:github.com "WhatsApp Business" "business verification" OR "account restricted" issue', "RESCUE"),
     ('site:nairaland.com whatsapp business api OR "meta verification"', "SETUP"),
     ('"whatsapp business account" restricted "how to fix" OR appeal forum', "RESCUE"),
-    ('site:reddit.com "ad account" disabled "business verification" meta', "RESCUE"),
 ]
 
 # --------------------------------------------------------------------------- scoring
@@ -69,12 +92,14 @@ BUY = [r"looking for", r"need someone", r"need help", r"\bhire\b", r"who can", r
 EARLY = [r"how to start", r"getting started", r"worth it", r"should i", r"thinking about", r"planning to",
          r"which provider", r"alternatives", r"beginner", r"is it possible"]
 JUNK = [r"top \d+", r"best .{0,30}(providers?|platforms?|tools?)", r"ultimate guide", r"step by step", r"free trial",
-        r"\bwe offer\b", r"our platform", r"pricing plans", r"book a demo", r"sign up"]
+        r"\bwe offer\b", r"our platform", r"pricing plans", r"book a demo"]
 VENDOR_DOMAINS = ("wati.io", "twilio.com", "360dialog.com", "gupshup.io", "interakt.shop", "respond.io",
                   "vonage.com", "kommo.com", "zendesk.com", "messagebird.com", "bird.com", "sinch.com",
                   "developers.facebook.com/docs", "facebook.com/business/help", "business.whatsapp.com",
                   "medium.com", "linkedin.com", "youtube.com")
-DOMAIN_BONUS = {"reddit.com": 1, "nairaland.com": 1, "quora.com": 0, "stackoverflow.com": 0, "github.com": -1}
+DOMAIN_BONUS = {"reddit.com": 1, "nairaland.com": 1, "quora.com": 0, "stackoverflow.com": 0, "github.com": -1,
+                "developers.facebook.com": 2, "developers.secure.facebook.com": 2, "communityforums.atmeta.com": 2,
+                "community.n8n.io": 1, "jotform.com": 1, "freelancer.com": 1, "peopleperhour.com": 1}
 
 
 def _hits(patterns, text):
@@ -83,7 +108,7 @@ def _hits(patterns, text):
 
 def norm_url(url):
     u = urllib.parse.urlsplit(url.strip())
-    host = u.netloc.lower().replace("www.", "").replace("old.reddit.com", "reddit.com")
+    host = u.netloc.lower().replace("www.", "").replace("old.reddit.com", "reddit.com").replace("developers.secure.facebook.com", "developers.facebook.com")
     return f"{host}{u.path.rstrip('/')}"
 
 
@@ -91,15 +116,47 @@ def host_of(url):
     return urllib.parse.urlsplit(url).netloc.lower().replace("www.", "").replace("old.", "")
 
 
-def recency_bonus(date_text):
-    t = (date_text or "").lower()
-    if re.search(r"(minute|hour)s? ago", t):
-        return 2
-    m = re.search(r"(\d+)\s+days? ago", t)
+def age_hours(date_text):
+    """Hours since the post, from Serper's date text ("2 hours ago", "Nov 8, 2026"), or None when unknown."""
+    t = (date_text or "").strip().lower()
+    if not t:
+        return None
+    m = re.search(r"(\d+)\s*(minute|hour|day|week|month)s?\s+ago", t)
     if m:
-        d = int(m.group(1))
-        return 2 if d <= 2 else (1 if d <= 7 else 0)
-    return 0
+        return int(m.group(1)) * {"minute": 1 / 60, "hour": 1, "day": 24, "week": 168, "month": 720}[m.group(2)]
+    for fmt in ("%b %d, %Y", "%B %d, %Y", "%d %b %Y"):
+        try:
+            d = datetime.strptime(date_text.strip(), fmt).replace(tzinfo=timezone.utc)
+            return max(0.0, (datetime.now(timezone.utc) - d).total_seconds() / 3600)
+        except ValueError:
+            continue
+    return None
+
+
+def recency_bonus(date_text):
+    h = age_hours(date_text)
+    if h is None:
+        return 0
+    return 3 if h <= 12 else (2 if h <= 48 else (1 if h <= 168 else 0))
+
+
+def age_bucket(date_text):
+    """0 = under 12 hours, 1 = under 36, 2 = under 4 days or unknown, 3 = older. Newest bucket is sent first."""
+    h = age_hours(date_text)
+    if h is None:
+        return 2
+    return 0 if h < 12 else (1 if h < 36 else (2 if h < 96 else 3))
+
+
+def age_text(date_text):
+    h = age_hours(date_text)
+    if h is None:
+        return ""
+    if h < 1:
+        return "posted under an hour ago"
+    if h < 48:
+        return f"posted about {int(h)} hour{'s' if int(h) != 1 else ''} ago"
+    return f"posted about {int(h // 24)} days ago"
 
 
 def classify(text, hint):
@@ -235,6 +292,7 @@ def save_seen(seen):
 
 
 def telegram(text):
+    time.sleep(0.6)  # stay under Telegram's per chat rate limit when many leads are sent at once
     if not (TG_TOKEN and TG_CHAT):
         print("(no Telegram secrets, printing instead)\n" + text + "\n")
         return
@@ -246,10 +304,13 @@ def telegram(text):
 
 
 def format_lead(n, lead):
+    title = lead.get("title", "")
+    shown = lead.get("summary") or (lead.get("snippet", "")[:200] if re.search(r"share-external|outage|^skip to main", title, re.I) else title)
+    when = age_text(lead.get("date", ""))
     return (f"Lead {n}: {LABEL.get(lead['type'], lead['type'])}\n"
             f"Fit {lead['fit']}/10 on {host_of(lead['link'])}"
-            + (f", posted by a {lead['who']}" if lead.get("who") else "") + "\n\n"
-            f"{lead.get('summary') or lead['title']}\n{lead['link']}\n\n"
+            + (f", by a {lead['who']}" if lead.get("who") else "") + (f", {when}" if when else "") + "\n\n"
+            f"{shown}\n{lead['link']}\n\n"
             f"Draft reply:\n{lead['reply']}")
 
 
@@ -278,7 +339,7 @@ def main():
             continue
         for item in results:
             key = norm_url(item.get("link", ""))
-            title_key = re.sub(r"\W+", "", item.get("title", "").lower())
+            title_key = re.sub(r"\W+", "", (item.get("title", "") + item.get("snippet", "")[:80]).lower())
             if not key or key in seen or key in found or title_key in titles:
                 continue
             score, kind = rule_score(item, hint)
@@ -289,7 +350,7 @@ def main():
     print(f"{len(ranked)} candidates after rules")
 
     leads = []
-    for item in ranked[:MAX_ALERTS * 2]:
+    for item in ranked[:MAX_ALERTS * 3]:
         judged = ai_judge(item)
         if judged:
             if judged.get("type") == "SKIP" or judged["fit"] < 4:
@@ -300,7 +361,7 @@ def main():
         else:
             lead = dict(item, fit=min(10, item["score"]), who="", summary="", reply=TEMPLATES[item["type"]])
         leads.append(lead)
-    leads = sorted(leads, key=lambda x: -x["fit"])[:MAX_ALERTS]
+    leads = sorted(leads, key=lambda x: (age_bucket(x.get("date", "")), -x["fit"], age_hours(x.get("date", "")) or 999))[:MAX_ALERTS]  # newest first
 
     if leads:
         telegram(f"Meta scout: {len(leads)} new lead{'s' if len(leads) != 1 else ''}, best first.")
@@ -348,6 +409,19 @@ def selftest():
         ok = s < MIN_SCORE
         problems += 0 if ok else 1
         print(("ok  " if ok else "FAIL"), s, t, "should be rejected:", item["title"][:40])
+    forum = {"title": "Partial Outageshare-external", "snippet": "Business verification stuck in review for 6 days, "
+             "blocking WhatsApp Business Platform. Support bot is no help.",
+             "link": "https://developers.secure.facebook.com/community/threads/967243804937762", "date": "Nov 8, 2026"}
+    s, t = rule_score(forum, "VERIFY")
+    ok = s >= MIN_SCORE and t == "VERIFY"
+    problems += 0 if ok else 1
+    print(("ok  " if ok else "FAIL"), s, t, "forum thread with junk title")
+    ok = norm_url(forum["link"]).startswith("developers.facebook.com/community")
+    problems += 0 if ok else 1
+    print(("ok  " if ok else "FAIL"), "forum url normalised")
+    ok = age_hours("2 hours ago") == 2 and age_hours("3 days ago") == 72 and age_hours("nonsense") is None
+    problems += 0 if ok else 1
+    print(("ok  " if ok else "FAIL"), "age parsing", age_text("5 hours ago"), age_bucket("5 hours ago"), age_bucket("3 days ago"))
     for k, v in TEMPLATES.items():
         if re.search(r"[\u2014\u2013-]", v):
             problems += 1
