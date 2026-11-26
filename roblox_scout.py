@@ -417,7 +417,7 @@ def youtube_api_leads(seen):
                 continue
             if looks_like_child(desc) or sn.get("madeForKids") or is_seller_channel(sn.get("title", "") + " " + desc):
                 continue
-            emails = find_emails(desc)
+            emails = [e for e in find_emails(desc) if usable_email(e)]
             if not emails:
                 continue
             leads.append({
@@ -453,7 +453,7 @@ def youtube_serper_leads(seen):
             checked.append(key)
             if key in seen or "roblox" not in text.lower() or looks_like_child(text) or is_seller_channel(text):
                 continue
-            emails = find_emails(text)
+            emails = [e for e in find_emails(text) if usable_email(e)]
             subs = parse_subs(text)
             if not emails or (subs is not None and not (YT_MIN_SUBS <= subs <= YT_MAX_SUBS)):
                 continue
@@ -544,6 +544,35 @@ def best_email(emails, host):
     return useful[0] if useful else ""
 
 
+STRICT_EMAIL = re.compile(r"^[a-z0-9][a-z0-9._%+\-]*@[a-z0-9\-]+(\.[a-z0-9\-]+)*\.[a-z]{2,}$")
+FREE_MAIL = ("gmail.com", "outlook.com", "hotmail.com", "yahoo.com", "icloud.com", "proton.me", "protonmail.com",
+             "aol.com", "live.com", "msn.com", "gmx.com", "zoho.com", "yandex.com", "mail.com", "fixated.com")
+ROLE_SKIP = re.compile(r"^(ads?|advertis\w*|press|media|pr|news|newsroom|editor\w*|journalist|subscriptions?|"
+                       r"group-[a-z]+|investors?|ir|legal|privacy|careers|jobs|hr|recruit\w*|webmaster|admin)@")
+ARTICLE = re.compile(r"/(news|blog|blogs|article|articles|insights|stories|press|press-releases?|release|magazine|"
+                     r"resources|guides?|wiki|learn|faq)(/|$)|\d{4}/\d{2}/", re.I)
+ARTICLE_TITLE = re.compile(r"^(how|why|what|when|where|who|is|are|can|top \d+|\d+ (ways|tips|best))\b|\?|"
+                           r"\b(guide|explained|what parents should know|everything you need|tips|news|report|"
+                           r"session|webinar|interview|case study)\b", re.I)
+BIG_COMPANY = ("dentsu", "accessintel", "chiefmarketer", "invenglobal", "wpp", "publicis", "omnicom", "ogilvy",
+               "havas", "adweek", "marketingdive", "variety", "reuters", "bloomberg", "cnbc", "nytimes", "bbc",
+               "trustmrr", "producthunt", "g2.com", "clutch.co", "sortlist", "designrush", "goodfirms")
+
+
+def usable_email(email, site_host=""):
+    """A real address that belongs to the business we found (or a creator's personal mailbox)."""
+    e = (email or "").strip().lower()
+    if not STRICT_EMAIL.match(e) or ROLE_SKIP.match(e) or BAD_EMAIL.search(e):
+        return False
+    domain = e.split("@", 1)[1]
+    if domain in FREE_MAIL:
+        return True
+    if not site_host:
+        return True
+    root = ".".join(site_host.lower().replace("www.", "").split(".")[-2:])
+    return domain == root or domain.endswith("." + root) or root.split(".")[0] in domain
+
+
 def web_leads(seen):
     leads, checked, sites = [], [], []
     day = datetime.now(timezone.utc).timetuple().tm_yday
@@ -563,6 +592,9 @@ def web_leads(seen):
             bio = any(b in host for b in LINK_IN_BIO)
             key = "web:" + (norm_url(link) if bio else host)
             if not host or key in seen or any(k == key for k, _, _ in sites) or any(sk in host for sk in WEB_SKIP):
+                continue
+            if any(b in host for b in BIG_COMPANY) or (not bio and (ARTICLE.search(urllib.parse.urlsplit(link).path)
+                                                                     or ARTICLE_TITLE.search(item.get("title", "")))):
                 continue
             sites.append((key, item, kind))
     print(f"web: {len(sites)} new sites to open")
@@ -587,7 +619,9 @@ def web_leads(seen):
             continue
         if looks_like_child(whole) or is_seller_channel(f"{item.get('title', '')} {item.get('snippet', '')}"):
             continue
-        email = best_email(emails, host)
+        site = "" if bio else host
+        emails = [e for e in emails if usable_email(e, site)]
+        email = best_email(emails, host) if emails else ""
         if not email:
             continue
         name = re.split(r"\s+[|\-–—]\s+", item.get("title", ""))[0][:80] or host
@@ -830,6 +864,11 @@ def selftest():
     assert parse_subs("Roblox stuff. 12.4K subscribers. 230 videos") == 12400
     assert parse_subs("1,250 subscribers") == 1250
     assert is_seller_channel("Roblox thumbnail designer, DM for prices. Business: x@gmail.com")
+    assert not usable_email("email us") and not usable_email("ads@invenglobal.com", "www.invenglobal.com")
+    assert not usable_email("hi@marclou.com", "trustmrr.com") and usable_email("hello@bloxforge.com", "bloxforge.com")
+    assert usable_email("tom.biz@gmail.com", "linktr.ee") and not usable_email("press@studio.com", "studio.com")
+    assert ARTICLE.search("/en/news/release/001687.html") and ARTICLE_TITLE.search("Why Has Roblox Become the Hub for UGC?")
+    assert not ARTICLE_TITLE.search("Blox Forge Studio | Roblox game studio")
     em, _ = page_emails('<a href="mailto:hello@bloxstudio.com">mail</a> or legal@bloxstudio.com, team at studio')
     assert em == ["hello@bloxstudio.com", "legal@bloxstudio.com"], em
     assert best_email(["legal@bloxstudio.com", "dev@gmail.com", "hello@bloxstudio.com"], "www.bloxstudio.com") == "hello@bloxstudio.com"

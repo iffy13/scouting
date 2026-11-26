@@ -375,6 +375,24 @@ def run():
         telegram(f"REPLY from {l.get('channel') or l['email']} ({l['email']}):\n\n{(text or '').strip()[:1500]}\n\n"
                  f"Answer it from your mailbox {mailbox}. No more automatic emails go to them.")
 
+    # re-check saved leads with the current rules (older runs kept some article pages and invalid addresses)
+    from roblox_scout import usable_email, ARTICLE, ARTICLE_TITLE, BIG_COMPANY, LINK_IN_BIO
+    for l in leads:
+        if l.get("status", "new") != "new":
+            continue
+        host = (l.get("channel_id") or "") if l.get("source", "").startswith("web_") else ""
+        bio = any(b in host for b in LINK_IN_BIO)
+        url = l.get("url", "")
+        bad = not usable_email(l["email"], "" if bio else host)
+        if host and not bio:
+            import urllib.parse
+            bad = bad or any(b in host for b in BIG_COMPANY) or bool(ARTICLE.search(urllib.parse.urlsplit(url).path)) \
+                or bool(ARTICLE_TITLE.search(l.get("channel", "")))
+        if bad:
+            l["status"] = "skipped"
+    if not DRY:
+        save_leads(leads)
+
     budget = max(0, min(PER_RUN, DAILY_CAP - sent_today(leads)))
     if budget == 0:
         print("daily cap reached")
@@ -496,6 +514,7 @@ def selftest():
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(line_buffering=True)  # progress shows in the Actions log while it runs
     if "--selftest" in ARGS:
         selftest()
     elif "--preview" in ARGS:
