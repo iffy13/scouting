@@ -8,9 +8,6 @@ on:
   schedule:
     - cron: "41 7 * * *"    # about 08:41 Lagos time
     - cron: "41 17 * * *"   # about 18:41 Lagos time
-  push:
-    branches: [ccr-a0c0259e-shhb7b]   # run once as soon as this branch is pushed
-    paths: [roblox_scout.py, .github/workflows/roblox_scout.yml]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -54,7 +51,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Restore what was already seen and the saved email leads
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: roblox_scout_state
           key: roblox-scout-v2-${{ github.run_id }}
@@ -66,6 +63,12 @@ jobs:
             emails) python roblox_scout.py --emails ;;
             *)      python roblox_scout.py ;;
           esac
+      - name: Save state (also when something failed, so nobody is scouted or emailed twice)
+        if: always() && inputs.dry_run != true
+        uses: actions/cache/save@v4
+        with:
+          path: roblox_scout_state
+          key: roblox-scout-v2-${{ github.run_id }}
       - name: Encrypt the email leads for download
         if: always()
         run: |
