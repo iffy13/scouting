@@ -466,6 +466,136 @@ def youtube_serper_leads(seen):
     return leads, checked
 
 
+
+# =========================================================================== source 3: web email leads
+# Businesses and adult creators who publish a contact email on their own site or link-in-bio page, and who buy
+# animation, trailers, thumbnails, UGC items or video. (search, kind). Rotated so each run covers a different part.
+WEB_QUERIES = [
+    ('"roblox" "game studio" "contact us" -site:roblox.com -site:youtube.com', "STUDIO"),
+    ('"roblox" studio "we make roblox games" OR "we build roblox experiences" contact', "STUDIO"),
+    ('"roblox development studio" OR "roblox game studio" "work with us" OR "get in touch"', "STUDIO"),
+    ('"roblox" "press kit" OR "presskit" game contact email', "STUDIO"),
+    ('"roblox experience" agency OR studio brands "contact" -site:roblox.com', "AGENCY"),
+    ('"roblox marketing agency" OR "roblox agency" contact', "AGENCY"),
+    ('"roblox" "ugc" shop OR brand OR group "business inquiries" OR "contact us" -commissions', "UGC"),
+    ('"roblox ugc" "limited" brand OR store "contact"', "UGC"),
+    ('"roblox coding" class OR camp OR academy OR course "contact us"', "EDU"),
+    ('"roblox game design" camp OR class OR academy "contact"', "EDU"),
+    ('site:linktr.ee roblox "@gmail.com"', "CREATOR"),
+    ('site:linktr.ee roblox youtuber OR streamer OR developer business', "CREATOR"),
+    ('site:beacons.ai roblox', "CREATOR"),
+    ('site:carrd.co roblox studio OR developer OR youtuber', "CREATOR"),
+    ('"roblox" youtuber OR streamer "business inquiries" "@gmail.com" -editor -gfx -commissions', "CREATOR"),
+    ('"roblox" tiktok creator "business" "@gmail.com" -editor -gfx -commissions', "CREATOR"),
+]
+WEB_MAX_QUERIES = int(os.getenv("WEB_MAX_QUERIES", "8"))
+WEB_MAX_SITES = int(os.getenv("WEB_MAX_SITES", "40"))
+WEB_SKIP = ("roblox.com", "rbxcdn.com", "youtube.com", "youtu.be", "reddit.com", "fandom.com", "wikipedia.org",
+            "x.com", "twitter.com", "facebook.com", "instagram.com", "tiktok.com", "linkedin.com", "medium.com",
+            "fiverr.com", "upwork.com", "freelancer.com", "amazon.", "apple.com", "google.", "microsoft.com",
+            "ign.com", "polygon.com", "theverge.com", "forbes.com", "techcrunch.com", "businessinsider.com",
+            "gamerant.com", "pcgamer.com", "dexerto.com", "sportskeeda.com", "screenrant.com", "kotaku.com",
+            "rolimons.com", "rbxrocks", "bloxfruits", "discord.com", "discord.gg", "github.com", "pinterest.",
+            "quora.com", "steamcommunity.com", "twitch.tv", "playstation.com", "xbox.com", "nintendo.com",
+            "glassdoor.", "indeed.", "crunchbase.com", "zoominfo.com", "trustpilot.com", "itch.io", "gamejolt")
+LINK_IN_BIO = ("linktr.ee", "beacons.ai", "carrd.co", "bio.link", "about.me", "lnk.bio", "solo.to")
+CONTACT_PATHS = ("/contact", "/contact-us", "/about", "/press", "/work-with-us")
+WEB_ANGLE = {
+    "STUDIO": "Studio: offer animations, a trailer or cinematics for their current or next game",
+    "AGENCY": "Agency: offer to be their outside animator or trailer editor for client projects",
+    "UGC": "UGC brand: offer item thumbnails, promo videos or accessory showcase clips",
+    "EDU": "Coding class or camp: offer promo videos or animated explainer clips",
+    "CREATOR": "Creator: offer editing, thumbnails or an animated intro",
+}
+TAG_RE = re.compile(r"<script.*?</script>|<style.*?</style>|<[^>]+>", re.S | re.I)
+MAILTO_RE = re.compile(r'mailto:([^"\'?>\s]+)', re.I)
+
+
+def fetch(url, limit=400_000):
+    req = urllib.request.Request(url, headers={
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9"})
+    with urllib.request.urlopen(req, timeout=12) as r:
+        if "html" not in (r.headers.get("Content-Type") or "html"):
+            return ""
+        return r.read(limit).decode("utf-8", "ignore")
+
+
+def page_emails(html):
+    emails = [urllib.parse.unquote(m).lower() for m in MAILTO_RE.findall(html)]
+    text = TAG_RE.sub(" ", html)
+    for e in find_emails(text) + emails:
+        e = e.strip(".,;:()[]<>")
+        if e not in emails and "@" in e and not BAD_EMAIL.search(e):
+            emails.append(e)
+    return [e for e in dict.fromkeys(emails) if not BAD_EMAIL.search(e)], text
+
+
+def best_email(emails, host):
+    """Prefer an address on the site's own domain, then a personal mailbox; skip legal and support addresses."""
+    root = ".".join(host.split(".")[-2:])
+    useful = [e for e in emails if not re.match(r"(legal|dmca|privacy|abuse|security|billing|careers|jobs|hr|"
+                                               r"support|help|noreply|webmaster)@", e)]
+    useful = useful or emails
+    for pref in (r"^(business|partner|hello|contact|info|team|studio|press|hi)@", ""):
+        for e in useful:
+            if e.endswith("@" + root) and re.search(pref, e):
+                return e
+    return useful[0] if useful else ""
+
+
+def web_leads(seen):
+    leads, checked, sites = [], [], []
+    day = datetime.now(timezone.utc).timetuple().tm_yday
+    offset = (day * 2 + datetime.now(timezone.utc).hour // 12) % len(WEB_QUERIES)
+    queries = WEB_QUERIES[offset:] + WEB_QUERIES[:offset]
+    for q, kind in queries[:WEB_MAX_QUERIES]:
+        try:
+            results = serper(q, window="y")
+        except Exception as e:
+            print(f"web search failed ({e}): {q}")
+            if isinstance(e, urllib.error.HTTPError):
+                break
+            continue
+        for item in results:
+            link = item.get("link", "")
+            host = host_of(link)
+            bio = any(b in host for b in LINK_IN_BIO)
+            key = "web:" + (norm_url(link) if bio else host)
+            if not host or key in seen or any(k == key for k, _, _ in sites) or any(sk in host for sk in WEB_SKIP):
+                continue
+            sites.append((key, item, kind))
+    print(f"web: {len(sites)} new sites to open")
+    for key, item, kind in sites[:WEB_MAX_SITES]:
+        checked.append(key)
+        link, host = item["link"], host_of(item["link"])
+        bio = any(b in host for b in LINK_IN_BIO)
+        pages = [link] if bio else [link] + [f"{urllib.parse.urlsplit(link).scheme}://{urllib.parse.urlsplit(link).netloc}{p}"
+                                            for p in CONTACT_PATHS]
+        emails, text = find_emails(f"{item.get('title', '')} {item.get('snippet', '')}"), ""
+        for url in pages[:4]:
+            try:
+                found, page_text = page_emails(fetch(url))
+            except Exception:
+                continue
+            text += " " + page_text[:6000]
+            emails += [e for e in found if e not in emails]
+            if emails and not bio and url != link:
+                break
+        whole = f"{item.get('title', '')} {item.get('snippet', '')} {text}"
+        if not emails or "roblox" not in whole.lower():
+            continue
+        if looks_like_child(whole) or is_seller_channel(f"{item.get('title', '')} {item.get('snippet', '')}"):
+            continue
+        email = best_email(emails, host)
+        if not email:
+            continue
+        name = re.split(r"\s+[|\-–—]\s+", item.get("title", ""))[0][:80] or host
+        leads.append({"source": f"web_{kind.lower()}", "channel": name, "channel_id": host, "url": link,
+                      "email": email, "other_emails": [e for e in emails if e != email][:3], "subscribers": "",
+                      "videos": "", "country": "", "last_upload": "", "angle": WEB_ANGLE[kind], "key": key})
+    return leads, checked
+
 # =========================================================================== shared plumbing
 def serper(query, window=None):
     body = json.dumps({"q": query, "num": 10, "tbs": f"qdr:{window or WINDOW}"}).encode()
@@ -517,8 +647,12 @@ def format_post(n, lead):
 
 
 def format_emails(leads, total):
-    lines = [f"Roblox email leads: {len(leads)} new small creator channels (sellers filtered out) with a business email ({total} saved in total)."]
+    lines = [f"Roblox email leads: {len(leads)} new (YouTube channels, studios, agencies, UGC brands, classes and "
+             f"creators, sellers filtered out). {total} saved in total."]
     for i, l in enumerate(leads, 1):
+        if l["source"].startswith("web_"):
+            lines.append(f"\n{i}. {l['channel']} [{l['source'][4:]}]\n{l['email']}\n{l['url']}\n{l['angle']}")
+            continue
         subs = f"{l['subscribers']:,} subs" if isinstance(l["subscribers"], int) else "subs unknown"
         up = f", last upload {l['last_upload']}" if l.get("last_upload") else ""
         lines.append(f"\n{i}. {l['channel']} ({subs}{up})\n{l['email']}\n{l['url']}\n{l['angle']}")
@@ -579,6 +713,9 @@ def run_emails(seen):
             leads, checked = leads + more, checked + more_checked
     else:
         leads, checked = youtube_serper_leads(seen)
+    if SERPER_KEY and "--no-web" not in ARGS:
+        more, more_checked = web_leads(seen)
+        leads, checked = leads + more, checked + more_checked
     unique, emails = [], set()
     for l in leads:
         if l["email"] not in emails:
@@ -693,6 +830,10 @@ def selftest():
     assert parse_subs("Roblox stuff. 12.4K subscribers. 230 videos") == 12400
     assert parse_subs("1,250 subscribers") == 1250
     assert is_seller_channel("Roblox thumbnail designer, DM for prices. Business: x@gmail.com")
+    em, _ = page_emails('<a href="mailto:hello@bloxstudio.com">mail</a> or legal@bloxstudio.com, team at studio')
+    assert em == ["hello@bloxstudio.com", "legal@bloxstudio.com"], em
+    assert best_email(["legal@bloxstudio.com", "dev@gmail.com", "hello@bloxstudio.com"], "www.bloxstudio.com") == "hello@bloxstudio.com"
+    assert best_email(["support@x.com"], "x.com") == "support@x.com"
     assert not is_seller_channel("I upload roblox obby videos every week! Business: x@gmail.com")
     ok &= rule_score(item("[Hiring] Roblox animator", "Need 10 combat animations, budget $100",
                           "https://www.reddit.com/r/forhire/comments/q/"), "ANIM")[0] >= MIN_SCORE
