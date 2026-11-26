@@ -48,7 +48,7 @@ TG_CHAT = os.getenv("TELEGRAM_CHAT_ID", "")
 ANTHROPIC_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 MODEL = os.getenv("ROBLOX_SCOUT_MODEL", "claude-haiku-5-5")
 WINDOW = os.getenv("ROBLOX_SCOUT_WINDOW", "w")              # Serper time filter: d = day, w = week, m = month
-MAX_POST_QUERIES = int(os.getenv("ROBLOX_SCOUT_MAX_QUERIES", "22"))
+MAX_POST_QUERIES = int(os.getenv("ROBLOX_SCOUT_MAX_QUERIES", "30"))
 MAX_POST_ALERTS = int(os.getenv("ROBLOX_SCOUT_MAX_ALERTS", "10"))
 MIN_SCORE = int(os.getenv("ROBLOX_SCOUT_MIN_SCORE", "5"))
 YT_MIN_SUBS = int(os.getenv("YT_MIN_SUBS", "300"))
@@ -90,6 +90,14 @@ POST_QUERIES = [
     ('site:itch.io roblox animator OR animation OR trailer "looking for" OR "help wanted"', "ANIM"),
     ('site:upwork.com/freelance-jobs roblox animation OR animator OR trailer OR "video editor"', "ANIM"),
     ('site:fiverr.com/requests OR site:freelancer.com/projects roblox animation OR animator OR trailer', "ANIM"),
+    # Subreddits where BUYERS must tag their post [Hiring] or [Paid]: almost no sellers in these results
+    ('site:reddit.com/r/forhire "[hiring]" roblox', "ANIM"),
+    ('site:reddit.com/r/gameDevClassifieds "[paid]" OR "[hiring]" roblox', "ANIM"),
+    ('site:reddit.com/r/HungryArtists "[hiring]" roblox', "THUMB"),
+    ('site:reddit.com/r/hireanartist "[hiring]" roblox', "THUMB"),
+    ('site:reddit.com/r/forhire "[hiring]" "video editor" roblox OR youtube gaming', "YTER"),
+    ('site:devforum.roblox.com intitle:hiring animator OR animations', "ANIM"),
+    ('site:devforum.roblox.com intitle:hiring trailer OR cinematic OR thumbnail OR icon', "VIDEO"),
 ]
 
 ROBLOX_HOSTS = ("devforum.roblox.com", "rohire.dev", "create.roblox.com", "talent.roblox.com")
@@ -99,14 +107,27 @@ NEED = [(r"\banimat(or|ors|ion|ions|e)\b", 3), (r"\btrailer\b", 3), (r"\bcinemat
         (r"\beditor\b", 1), (r"\bshowcase video", 2), (r"\bpromo(tional)? video", 2), (r"\bemotes?\b", 2),
         (r"\bvfx\b", 1), (r"\bmoon animator\b", 2), (r"\bblender\b", 1),
         (r"no players|0 players|zero players|nobody plays|no one plays|get (more )?players|player count", 3)]
-INTENT = [r"\bhiring\b", r"looking for", r"\bneed(s|ed)? (an?|someone|help)", r"\bcommission", r"\bpaid\b",
-          r"\bpay(ing)?\b", r"\bbudget\b", r"\brobux\b", r"\busd\b", r"\$\s?\d", r"\bper animation\b",
-          r"\bwho can\b", r"\bseeking\b", r"\brecruit", r"\bhelp\b", r"how (do|can) i"]
-# Other freelancers advertising themselves, closed jobs and tutorials are not leads
-REJECT = [r"\[\s*for hire\s*\]", r"\bfor hire\b", r"\bcommissions? (are )?open\b", r"\btaking commissions\b",
-          r"\bmy portfolio\b", r"\bi(?:'m| am) an? (?:roblox )?(animator|editor|thumbnail)", r"\boffering\b",
-          r"\[\s*(closed|filled)\s*\]", r"\b(closed|filled)\b\s*[\]\)|:-]", r"\btutorial\b", r"\bhow to animate\b",
-          r"\btop \d+\b", r"\bfree download\b"]
+# A post is only a lead when its author is BUYING. One of these must be present.
+BUYER = [r"\[\s*(hiring|paid|recruiting|task)\s*\]", r"^\s*hiring\b", r"\bhiring (an?|some|for|\d|experienced|skilled)",
+         r"\bis hiring\b", r"\bwe(?:'re| are) hiring\b", r"\bnow hiring\b",
+         r"\blooking for (an?|some|someone|somebody|\d+|experienced|skilled|talented|good|reliable)\b(?! (work|job|clients?|commissions?|customers|buyers|projects?|gigs?))",
+         r"\bneed(s|ed|ing)? (an?|someone|somebody|some(one)? to|help (with|making))\b", r"\bwho can (make|animate|edit|do|create)\b",
+         r"\b(will|willing to|can|i'?ll) pay\b", r"\bpaying (in )?(\$|usd|robux|\d)", r"\bbudget\b", r"\bseeking (an?|experienced)\b",
+         r"\brecruiting\b", r"\bpay(ment)? (is|of|will be|per)\b", r"\bper animation\b"]
+# Any sign that the author is SELLING removes the post. These are other freelancers, not buyers.
+SELLER = [r"\bfor hire\b", r"\[\s*(fh|for hire|offering|selling|available)\s*\]", r"\bhire me\b",
+          r"\bcommissions? (are )?(open|available)\b", r"\b(open|available) for (commissions?|work|hire|projects?|orders)\b",
+          r"\b(accepting|taking) (commissions?|orders|clients|requests|work)\b",
+          r"\blooking for (work|a job|jobs|clients?|commissions?|customers|buyers|projects?|gigs?|opportunities)\b",
+          r"\bi(?:'?m| am) an? [\w\s\-]{0,30}(animator|editor|designer|artist|modell?er|builder|scripter|developer|freelancer)\b",
+          r"\b(i|we) (make|create|do|offer|provide|sell|design|edit|animate) [\w\s]{0,20}(for (you|your)|animations|trailers|thumbnails|icons|edits|gfx)\b",
+          r"\b(my|our) (portfolio|services|prices|pricing|rates|work|showcase|commissions)\b",
+          r"\bstarting (at|from)\b", r"\bprices? (start|from|list)\b", r"\bslots?\b( open| left| available)?", r"\bcheap\b",
+          r"\bdm (me )?(for|to order|if you)\b", r"\bcontact me\b", r"\bcheck out my\b", r"\bfiverr\.com/(?!requests)",
+          r"\bgfx (artist|designer|commissions)\b", r"^\s*\[?\s*(portfolio|showcase|services|commissions)\b",
+          r"\b(animation|animator|editing|thumbnail|gfx|trailer|cinematic|ugc|modeling|building) (portfolio|services|commissions)\b",
+          r"\[\s*(closed|filled)\s*\]", r"\b(closed|filled)\b\s*[\]\)|:\-]", r"^\s*(closed|filled)\b",
+          r"\btutorial\b", r"\bhow to (animate|make an? (animation|trailer|thumbnail))\b", r"\btop \d+\b", r"\bfree download\b"]
 UNPAID = [r"\bunpaid\b", r"\bvolunteer", r"\bpercentage only\b", r"% of (the )?(revenue|profit|earnings)",
           r"\brevenue share\b", r"\bprofit share\b", r"\bfor free\b", r"\bno pay\b", r"\bexposure\b"]
 DOMAIN_BONUS = {"devforum.roblox.com": 2, "rohire.dev": 2, "create.roblox.com": 2, "talent.roblox.com": 2,
@@ -183,18 +204,36 @@ def is_roblox(item):
     return "roblox" in text or any(h in link for h in ROBLOX_HOSTS) or any(s in link for s in ROBLOX_SUBS)
 
 
+BOILERPLATE = re.compile(r"\s*[-|:]\s*(find and hire talent|collaboration|developer forum|roblox|reddit|itch\.io|"
+                         r"r/\w+|x|twitter|community|help wanted or offered)\b.*$", re.I)
+NO_PLAYERS = r"no players|0 players|zero players|nobody plays|no one plays|get (more )?players|no visits|0 visits|player count"
+
+
+def clean_text(item):
+    """Title without the site name ("... - Find and Hire Talent - Developer Forum") plus the snippet."""
+    title = BOILERPLATE.sub("", item.get("title", ""))
+    return f"{title} {item.get('snippet', '')}", title
+
+
+def is_seller(item):
+    text, title = clean_text(item)
+    return _hits(SELLER, text) > 0 or _hits(SELLER, title) > 0
+
+
 def rule_score(item, hint):
-    """Returns (score, type) or (0, None) when the result is not a lead."""
-    text = f"{item.get('title', '')} {item.get('snippet', '')}"
-    if not is_roblox(item) or _hits(REJECT, text):
+    """Returns (score, type) or (0, None) when the result is not a BUYER lead."""
+    text, _ = clean_text(item)
+    if not is_roblox(item) or is_seller(item):
         return 0, None
     need = min(6, sum(w for p, w in NEED if re.search(p, text, re.I)))
-    intent = min(6, 2 * _hits(INTENT, text))
-    if need == 0 or intent == 0:
+    struggling = bool(re.search(NO_PLAYERS, text, re.I)) and bool(re.search(r"\bmy (first |new |own )?(roblox )?(game|experience)\b", text, re.I))
+    buyer = _hits(BUYER, text)
+    if need == 0 or (buyer == 0 and not struggling):
         return 0, None
-    score = need + intent + recency_bonus(item.get("date", "")) + DOMAIN_BONUS.get(host_of(item.get("link", "")), 0)
+    score = need + min(6, 3 * buyer) + (3 if struggling else 0) + recency_bonus(item.get("date", ""))
+    score += DOMAIN_BONUS.get(host_of(item.get("link", "")), 0)
     if _hits(UNPAID, text):
-        score -= 3
+        score -= 4
     return score, classify(text, hint)
 
 
@@ -218,8 +257,9 @@ LABEL = {"ANIM": "Needs animations", "VIDEO": "Needs a trailer or cinematic", "T
 SYSTEM_PROMPT = """You help Samuel, a freelancer who sells Roblox animations, game trailers and cinematics,
 thumbnails and game icons, and video editing for Roblox YouTubers. You judge a public post found by search.
 Reply with JSON only, no other text, with these keys:
-fit: 0 to 10, how likely the poster would pay Samuel for this. Score 0 to 2 for other freelancers advertising
-themselves, closed or filled jobs, tutorials, unpaid or profit share only requests, and anyone who looks under 16.
+fit: 0 to 10, how likely the poster would pay Samuel for this. The poster must be a BUYER. Score 0 for anyone
+selling or advertising their own services (animators, editors, GFX or thumbnail artists, portfolios, commissions open),
+and 0 to 2 for closed or filled jobs, tutorials, unpaid or profit share only requests, and anyone who looks under 16.
 type: one of ANIM, VIDEO, THUMB, LAUNCH, YTER, SKIP
 who: solo dev, small team, studio, youtuber or other
 budget: the budget or pay if stated, else empty
@@ -260,14 +300,13 @@ def clean_reply(text):
 
 # =========================================================================== source 2: YouTube email leads
 YT_TOPICS = [
-    "roblox animation", "roblox story", "roblox funny moments", "roblox brookhaven", "roblox obby",
+    "roblox story", "roblox funny moments", "roblox brookhaven", "roblox obby",
     "roblox horror", "roblox devlog", "making a roblox game", "roblox but", "roblox tycoon",
     "roblox blox fruits", "roblox shorts", "roblox studio tutorial", "roblox edit",
 ]
 YT_SERPER = [
     'site:youtube.com roblox "@gmail.com" "business"',
     'site:youtube.com roblox "business inquiries" "@gmail.com"',
-    'site:youtube.com roblox animation "@gmail.com"',
     'site:youtube.com roblox devlog "@gmail.com" OR "@outlook.com"',
     'site:youtube.com roblox "for business" "@gmail.com" subscribers',
     'site:youtube.com roblox story "@gmail.com"',
@@ -284,6 +323,18 @@ CHILD = [r"\bi(?:'?m| am) (?:[5-9]|1[0-5])\b", r"\b(?:[5-9]|1[0-5]) ?(?:years? o
          r"\bparent(?:s|al)? (?:email|managed|supervised)", r"\bkid(?:s)? channel\b", r"\bi(?:'?m| am) a kid\b",
          r"\bage (?:[5-9]|1[0-5])\b", r"\bgrade [1-9]\b"]
 SUBS_RE = re.compile(r"([\d.,]+)\s*([KkMm])?\s+subscribers")
+
+
+# Channels that SELL editing, thumbnails, GFX or animation are competitors, not buyers
+SELLER_CHANNEL = [r"\bcommissions?\b", r"\bfor hire\b", r"\bhire me\b", r"\bportfolio\b", r"\bfiverr\b", r"\bupwork\b",
+                  r"\b(thumbnail|gfx|graphic|logo|icon) (designer|artist|maker|design)\b", r"\bgfx\b",
+                  r"\b(video )?editor for\b", r"\bediting services\b", r"\bmy services\b", r"\bprices?\b", r"\brates\b",
+                  r"\border(s|ing)?\b", r"\bdm (me )?for\b", r"\bi (make|do|edit|design|create) (thumbnails|edits|videos|animations|intros|logos) for\b",
+                  r"\bfreelanc", r"\bclients?\b", r"\bstudio services\b", r"\banimator for hire\b"]
+
+
+def is_seller_channel(text):
+    return _hits(SELLER_CHANNEL, text or "") > 0
 
 
 def find_emails(text):
@@ -364,7 +415,7 @@ def youtube_api_leads(seen):
             desc = sn.get("description", "")
             if not (YT_MIN_SUBS <= subs <= YT_MAX_SUBS) or int(st.get("videoCount", 0) or 0) < 5:
                 continue
-            if looks_like_child(desc) or sn.get("madeForKids"):
+            if looks_like_child(desc) or sn.get("madeForKids") or is_seller_channel(sn.get("title", "") + " " + desc):
                 continue
             emails = find_emails(desc)
             if not emails:
@@ -400,7 +451,7 @@ def youtube_serper_leads(seen):
             key = f"yt:{handle.lower()}"
             text = f"{item.get('title', '')} {item.get('snippet', '')}"
             checked.append(key)
-            if key in seen or "roblox" not in text.lower() or looks_like_child(text):
+            if key in seen or "roblox" not in text.lower() or looks_like_child(text) or is_seller_channel(text):
                 continue
             emails = find_emails(text)
             subs = parse_subs(text)
@@ -466,7 +517,7 @@ def format_post(n, lead):
 
 
 def format_emails(leads, total):
-    lines = [f"Roblox email leads: {len(leads)} new small channels with a business email ({total} saved in total)."]
+    lines = [f"Roblox email leads: {len(leads)} new small creator channels (sellers filtered out) with a business email ({total} saved in total)."]
     for i, l in enumerate(leads, 1):
         subs = f"{l['subscribers']:,} subs" if isinstance(l["subscribers"], int) else "subs unknown"
         up = f", last upload {l['last_upload']}" if l.get("last_upload") else ""
@@ -568,8 +619,8 @@ def main():
     if do_posts and SERPER_KEY:
         posts, checked, stopped = run_posts(seen)
         if posts:
-            telegram(f"Roblox scout: {len(posts)} new post lead{'s' if len(posts) != 1 else ''}, newest first. "
-                     "Reply on the post or DM them.")
+            telegram(f"Roblox scout: {len(posts)} new BUYER{'S' if len(posts) != 1 else ''} (people hiring or needing help, "
+                     "sellers filtered out), newest first. Reply on the post or DM them.")
             for i, lead in enumerate(posts, 1):
                 telegram(format_post(i, lead))
         if not DRY:
@@ -610,6 +661,16 @@ def selftest():
               "https://www.reddit.com/r/NewTubers/comments/def/y/"), "YTER"),
     ]
     bad = [
+        item("Roblox Animator Portfolio - Find and Hire Talent - Developer Forum",
+             "Hi, I'm a roblox animator with 3 years of experience, looking for work. Paid commissions, DM me.",
+             "https://devforum.roblox.com/t/animator-portfolio/5"),
+        item("Roblox trailers and cinematics, cheap", "I make cinematic trailers for your roblox game, starting at $20",
+             "https://x.com/seller/status/2"),
+        item("Thumbnail and icon commissions", "Roblox GFX artist, need a thumbnail? Slots open, check out my work",
+             "https://www.reddit.com/r/roblox/comments/s/y/"),
+        item("[FH] Roblox video editor", "Looking for clients who need a video editor for roblox videos, paid",
+             "https://www.reddit.com/r/forhire/comments/z/"),
+        item("Need an animator? Hire me", "Roblox animator, open for commissions", "https://devforum.roblox.com/t/x/6"),
         item("[FOR HIRE] Roblox animator, commissions open", "My portfolio, looking for work, paid",
              "https://devforum.roblox.com/t/for-hire/1"),
         item("[CLOSED] Hiring animator", "looking for an animator, paid robux", "https://devforum.roblox.com/t/c/2"),
@@ -631,6 +692,10 @@ def selftest():
     assert not looks_like_child("I post roblox videos 3 times a week. Business: a@gmail.com")
     assert parse_subs("Roblox stuff. 12.4K subscribers. 230 videos") == 12400
     assert parse_subs("1,250 subscribers") == 1250
+    assert is_seller_channel("Roblox thumbnail designer, DM for prices. Business: x@gmail.com")
+    assert not is_seller_channel("I upload roblox obby videos every week! Business: x@gmail.com")
+    ok &= rule_score(item("[Hiring] Roblox animator", "Need 10 combat animations, budget $100",
+                          "https://www.reddit.com/r/forhire/comments/q/"), "ANIM")[0] >= MIN_SCORE
     assert "Game dev" in angle_for("Roblox devlog: making a roblox game")
     assert clean_reply("Hey - I can help—fast") == "Hey, I can help, fast"
     print("selftest", "passed" if ok else "FAILED")
