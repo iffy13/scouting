@@ -16,3 +16,6 @@ autopilot.lock
 outreach_report*.xlsx
 *.xlsx
 smtp_accounts.json
+roblox_scout_state/
+roblox_leads_today.json
+roblox_email_leads.csv*

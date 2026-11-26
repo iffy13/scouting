@@ -1,0 +1,84 @@
+name: Roblox scout
+
+# Finds small Roblox creators who need animation, trailers, thumbnails or video editing, and sends them to your
+# Telegram: hiring and "need help" posts (with a draft reply) and small YouTube channels with a business email.
+# Never contacts anyone. Email leads are kept in the Actions cache and an ENCRYPTED artifact, never in git
+# (this repository is public).
+on:
+  schedule:
+    - cron: "41 7 * * *"    # about 08:41 Lagos time
+    - cron: "41 17 * * *"   # about 18:41 Lagos time
+  push:
+    branches: [ccr-a0c0259e-shhb7b]   # run once as soon as this branch is pushed
+    paths: [roblox_scout.py, .github/workflows/roblox_scout.yml]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (print only, nothing to Telegram, save nothing)"
+        type: boolean
+        default: false
+      only:
+        description: "Which source"
+        type: choice
+        options: [both, posts, emails]
+        default: both
+
+permissions:
+  contents: read
+
+concurrency:
+  group: roblox-scout
+  cancel-in-progress: false
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
+      YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      DB_PASSPHRASE: ${{ secrets.DB_PASSPHRASE }}
+      ROBLOX_SCOUT_WINDOW: ${{ vars.ROBLOX_SCOUT_WINDOW || 'w' }}
+      ROBLOX_SCOUT_MAX_ALERTS: ${{ vars.ROBLOX_SCOUT_MAX_ALERTS || '10' }}
+      ROBLOX_SCOUT_MAX_QUERIES: ${{ vars.ROBLOX_SCOUT_MAX_QUERIES || '22' }}
+      ROBLOX_SCOUT_EXTRA: ${{ vars.ROBLOX_SCOUT_EXTRA }}
+      YT_MIN_SUBS: ${{ vars.YT_MIN_SUBS || '300' }}
+      YT_MAX_SUBS: ${{ vars.YT_MAX_SUBS || '30000' }}
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Restore what was already seen and the saved email leads
+        uses: actions/cache@v4
+        with:
+          path: roblox_scout_state
+          key: roblox-scout-${{ github.run_id }}
+          restore-keys: roblox-scout-
+      - name: Run Roblox scout
+        run: |
+          case "${{ inputs.only }}" in
+            posts)  python roblox_scout.py --posts ;;
+            emails) python roblox_scout.py --emails ;;
+            *)      python roblox_scout.py ;;
+          esac
+      - name: Encrypt the email leads for download
+        if: always()
+        run: |
+          if [ -n "$DB_PASSPHRASE" ] && [ -f roblox_scout_state/roblox_email_leads.csv ]; then
+            bash ci/data_sync.sh encrypt-file roblox_scout_state/roblox_email_leads.csv roblox_email_leads.csv.enc
+          fi
+      - name: Keep the leads
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: roblox-leads-${{ github.run_id }}
+          path: |
+            roblox_leads_today.json
+            roblox_email_leads.csv.enc
+          retention-days: 30
+          if-no-files-found: ignore
