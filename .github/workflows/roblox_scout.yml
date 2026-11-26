@@ -43,7 +43,7 @@ jobs:
       DB_PASSPHRASE: ${{ secrets.DB_PASSPHRASE }}
       ROBLOX_SCOUT_WINDOW: ${{ vars.ROBLOX_SCOUT_WINDOW || 'w' }}
       ROBLOX_SCOUT_MAX_ALERTS: ${{ vars.ROBLOX_SCOUT_MAX_ALERTS || '10' }}
-      ROBLOX_SCOUT_MAX_QUERIES: ${{ vars.ROBLOX_SCOUT_MAX_QUERIES || '22' }}
+      ROBLOX_SCOUT_MAX_QUERIES: ${{ vars.ROBLOX_SCOUT_MAX_QUERIES || '30' }}
       ROBLOX_SCOUT_EXTRA: ${{ vars.ROBLOX_SCOUT_EXTRA }}
       YT_MIN_SUBS: ${{ vars.YT_MIN_SUBS || '300' }}
       YT_MAX_SUBS: ${{ vars.YT_MAX_SUBS || '30000' }}

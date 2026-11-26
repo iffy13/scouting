@@ -63,6 +63,14 @@ DRY = os.getenv("DRY_RUN", "").lower() in ("1", "true", "yes") or "--dry" in ARG
 # =========================================================================== source 1: posts
 # (search, lead type it usually finds). Add your own with ROBLOX_SCOUT_EXTRA, one per line as: TYPE|search
 POST_QUERIES = [
+    # Subreddits where BUYERS must tag their post [Hiring] or [Paid]: almost no sellers in these results
+    ('site:reddit.com/r/forhire "[hiring]" roblox', "ANIM"),
+    ('site:reddit.com/r/gameDevClassifieds "[paid]" OR "[hiring]" roblox', "ANIM"),
+    ('site:reddit.com/r/HungryArtists "[hiring]" roblox', "THUMB"),
+    ('site:reddit.com/r/hireanartist "[hiring]" roblox', "THUMB"),
+    ('site:reddit.com/r/forhire "[hiring]" "video editor" roblox OR youtube gaming', "YTER"),
+    ('site:devforum.roblox.com intitle:hiring animator OR animations', "ANIM"),
+    ('site:devforum.roblox.com intitle:hiring trailer OR cinematic OR thumbnail OR icon', "VIDEO"),
     # Roblox DevForum, Find and Hire Talent: small teams paying for work right now
     ('site:devforum.roblox.com hiring animator', "ANIM"),
     ('site:devforum.roblox.com "looking for" animator OR animations paid OR commission OR robux', "ANIM"),
@@ -90,14 +98,6 @@ POST_QUERIES = [
     ('site:itch.io roblox animator OR animation OR trailer "looking for" OR "help wanted"', "ANIM"),
     ('site:upwork.com/freelance-jobs roblox animation OR animator OR trailer OR "video editor"', "ANIM"),
     ('site:fiverr.com/requests OR site:freelancer.com/projects roblox animation OR animator OR trailer', "ANIM"),
-    # Subreddits where BUYERS must tag their post [Hiring] or [Paid]: almost no sellers in these results
-    ('site:reddit.com/r/forhire "[hiring]" roblox', "ANIM"),
-    ('site:reddit.com/r/gameDevClassifieds "[paid]" OR "[hiring]" roblox', "ANIM"),
-    ('site:reddit.com/r/HungryArtists "[hiring]" roblox', "THUMB"),
-    ('site:reddit.com/r/hireanartist "[hiring]" roblox', "THUMB"),
-    ('site:reddit.com/r/forhire "[hiring]" "video editor" roblox OR youtube gaming', "YTER"),
-    ('site:devforum.roblox.com intitle:hiring animator OR animations', "ANIM"),
-    ('site:devforum.roblox.com intitle:hiring trailer OR cinematic OR thumbnail OR icon', "VIDEO"),
 ]
 
 ROBLOX_HOSTS = ("devforum.roblox.com", "rohire.dev", "create.roblox.com", "talent.roblox.com")
