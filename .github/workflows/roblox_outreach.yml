@@ -43,6 +43,7 @@ jobs:
       YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
       DB_PASSPHRASE: ${{ secrets.DB_PASSPHRASE }}
       ROBLOX_MAILBOX: ${{ vars.ROBLOX_MAILBOX }}
+      YT_MAX_SUBS: ${{ vars.YT_MAX_SUBS || '10000' }}
       ROBLOX_DAILY_CAP: ${{ vars.ROBLOX_DAILY_CAP || '50' }}
       ROBLOX_PER_RUN: ${{ vars.ROBLOX_PER_RUN || '10' }}
       ROBLOX_OUTREACH_PAUSED: ${{ vars.ROBLOX_OUTREACH_PAUSED || 'false' }}

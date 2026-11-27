@@ -41,6 +41,7 @@ PER_RUN = int(os.getenv("ROBLOX_PER_RUN", "10") or 10)
 MIN_GAP = float(os.getenv("ROBLOX_MIN_GAP", "3") or 3)
 MAX_GAP = float(os.getenv("ROBLOX_MAX_GAP", "7") or 7)
 FOLLOWUP_DAYS = int(os.getenv("ROBLOX_FOLLOWUP_DAYS", "4") or 4)
+MAX_SUBS = int(os.getenv("YT_MAX_SUBS", "10000") or 10000)
 MC_SHARE = float(os.getenv("MINECRAFT_SHARE", "0.5") or 0.5)
 BOUNCE_LIMIT = float(os.getenv("ROBLOX_BOUNCE_LIMIT", "0.08") or 0.08)
 PAUSED = os.getenv("ROBLOX_OUTREACH_PAUSED", "").lower() in ("1", "true", "yes")
@@ -464,6 +465,9 @@ def run():
         bio = any(b in host for b in LINK_IN_BIO)
         url = l.get("url", "")
         bad = not usable_email(l["email"], "" if bio else host)
+        subs = l.get("subscribers")
+        if isinstance(subs, int) and subs > MAX_SUBS:
+            bad = True  # established channel, not the small creators we want
         if host and not bio:
             import urllib.parse
             bad = bad or any(b in host for b in BIG_COMPANY) or bool(ARTICLE.search(urllib.parse.urlsplit(url).path)) \
