@@ -24,6 +24,7 @@ Run:  python roblox_outreach.py             normal run
       python roblox_outreach.py --selftest  check the email writer, no network
 """
 import hashlib
+import digest
 import json
 import os
 import random
@@ -516,13 +517,13 @@ def run():
         print("ROBLOX_OUTREACH_PAUSED is true, nothing sent.")
         return
     if not leads:
-        telegram("Roblox outreach: no email leads saved yet. The scout runs first, then emails start.")
+        digest.add("Outreach", "No email leads saved yet. The scout runs first, then emails start.")
         return
     from sender.gmail_client import MultiGmailService
     svc = MultiGmailService(mode="all")
     mailbox = pick_mailbox(svc)
     if not mailbox:
-        telegram("Roblox outreach stopped: the sending mailbox is not connected. Check the mailbox secrets "
+        digest.urgent("Roblox outreach stopped: the sending mailbox is not connected. Check the mailbox secrets "
                  "(MAILBOX_MAP_JSON and the ACCOUNT_*_JSON or SMTP_ACCOUNTS_JSON tokens), or set the ROBLOX_MAILBOX "
                  "variable to a connected address. Nothing was sent.")
         return
@@ -535,7 +536,7 @@ def run():
     except Exception:
         last = ""
     if last != now().date().isoformat() + str(dom_ok):
-        telegram(dom_text)
+        (digest.add("Domain check", dom_text) if dom_ok else digest.urgent(dom_text))
         if not DRY:
             os.makedirs(STATE_DIR, exist_ok=True)
             open(flag, "w").write(now().date().isoformat() + str(dom_ok))
@@ -555,7 +556,7 @@ def run():
     if not DRY:
         save_leads(leads)
     for l, text in report["replied"]:
-        telegram(reply_alert(l, text, mailbox))
+        digest.urgent(reply_alert(l, text, mailbox))
         if l.get("latest_video_id") and os.getenv("GEMINI_API_KEY") and not DRY:
             try:  # finished samples, made by the image model, straight to Telegram
                 from thumb_maker import make_samples
@@ -564,7 +565,7 @@ def run():
                 print(f"samples failed: {type(e).__name__}: {e}")
         elif l.get("latest_title"):
             from thumb_brief import brief
-            telegram(brief(l["latest_title"], niche_of(l), l["email"]))
+            digest.urgent(brief(l["latest_title"], niche_of(l), l["email"]))
 
     # re-check saved leads with the current rules (older runs kept some article pages and invalid addresses)
     from roblox_scout import usable_email, ARTICLE, ARTICLE_TITLE, BIG_COMPANY, LINK_IN_BIO
@@ -592,7 +593,7 @@ def run():
     recent = sorted((l for l in leads if l.get("sent_at")), key=lambda l: l["sent_at"])[-40:]
     bounced = sum(1 for l in recent if l.get("status") == "bounced")
     if len(recent) >= 20 and bounced / len(recent) > BOUNCE_LIMIT:
-        telegram(f"Roblox outreach PAUSED: {bounced} of the last {len(recent)} emails bounced "
+        digest.urgent(f"Roblox outreach PAUSED: {bounced} of the last {len(recent)} emails bounced "
                  f"({bounced * 100 // len(recent)}%). Sending more would damage your domain. Tell Claude so the lead "
                  f"filter can be fixed; it restarts by itself once the rate is back under {int(BOUNCE_LIMIT * 100)}%.")
         budget = 0
@@ -682,7 +683,7 @@ def run():
             report["first"].append(l)
             budget -= 1
         elif out == "no_capacity":
-            telegram(f"Roblox outreach paused: {mailbox} hit a sending limit. It will try again next run.")
+            digest.add("Outreach", f"{mailbox} hit a sending limit. It will try again next run.")
             break
         else:
             l["status"] = "failed"
@@ -701,7 +702,12 @@ def run():
         lines.append(f"Failed: {report['failed']}")
     for l in report["first"][:15]:
         lines.append(f"- [{niche_of(l).title()}] {l.get('channel') or ''} <{l['email']}>")
-    telegram("\n".join(lines))
+    if DRY:
+        print("\n".join(lines))
+    else:
+        digest.add("Outreach run", "\n".join(lines))
+        digest.bump(emails_sent=len(report["first"]), followups=report["followups"],
+                    replies=len(report["replied"]), bounces=report["bounced"])
 
 
 def preview(n):

@@ -31,6 +31,7 @@ Run:  python roblox_scout.py                 both sources
       python roblox_scout.py --selftest      check scoring and parsing, no network
 """
 import csv
+import digest
 import json
 import os
 import re
@@ -1060,10 +1061,12 @@ def main():
     if do_posts and SERPER_KEY:
         posts, checked, stopped = run_posts(seen)
         if posts:
-            telegram(f"Scout: {len(posts)} new BUYER{'S' if len(posts) != 1 else ''} (people hiring or needing help, "
-                     "sellers filtered out), newest first. Reply on the post or DM them.")
-            for i, lead in enumerate(posts, 1):
-                telegram(format_post(i, lead))
+            if not DRY:
+                digest.add(f"{len(posts)} buyer posts (people hiring or needing help). Reply on the post or DM them",
+                           "\n\n".join(format_post(i, lead) for i, lead in enumerate(posts, 1)))
+                digest.bump(buyer_posts=len(posts))
+            else:
+                print("\n\n".join(format_post(i, lead) for i, lead in enumerate(posts, 1)))
         if not DRY:
             for k in checked:
                 seen[k] = now
@@ -1073,8 +1076,9 @@ def main():
             for k in checked:
                 seen[k] = now
             total = save_email_leads(email_leads)
-        if email_leads:
-            telegram(format_emails(email_leads, total))
+        if email_leads and not DRY:
+            digest.add("Email leads", format_emails(email_leads, total))
+            digest.bump(email_leads=len(email_leads))
 
     src = "YouTube API" if YOUTUBE_KEY else "Serper search (add YOUTUBE_API_KEY for more and better email leads)"
     summary = (f"Scout finished ({' + '.join(n.title() for n in NICHES)}).\nPost leads: {len(posts)}\nNew email leads: {len(email_leads)} "
@@ -1084,7 +1088,15 @@ def main():
     if stopped:
         summary += f"\n\n{stopped}"
     print(summary, flush=True)
-    telegram(summary)
+    if not DRY:
+        digest.add("Scout run", summary)
+        if balance is not None:
+            digest.note("Serper credits left", balance)
+        if stopped:
+            digest.urgent(stopped)
+        elif balance is not None and balance < 300 and load_json("low_credit_warned.txt", "") != str(balance // 100):
+            digest.urgent(f"Serper credits are low: {balance} left. Scouting is cutting back; top up at serper.dev to keep the hiring posts and web leads coming.")
+            save_json("low_credit_warned.txt", str(balance // 100))
     if not DRY:
         save_json("seen.json", seen)
         with open("roblox_leads_today.json", "w") as f:  # posts are public pages, safe to keep as an artifact
