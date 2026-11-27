@@ -13,5 +13,5 @@ For a nicer caption or a format label ("VS duel", "Countdown"), add the file nam
 To remove a piece, delete its file.
 
 ## One time setup
-Repository **Settings → Pages → Build and deployment → Source: GitHub Actions**. Then run
+Pages is on and serves the gh-pages branch, which the Portfolio site workflow updates. To publish by hand, run
 **Actions → Portfolio site → Run workflow** once (or upload any file to `site/`).
