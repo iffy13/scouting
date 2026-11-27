@@ -1,0 +1,47 @@
+{
+  "work": {
+    "01-roblox-whos-faster.jpg": {
+      "title": "Who's faster?",
+      "format": "VS duel"
+    },
+    "02-minecraft-day-100-one-heart.jpg": {
+      "title": "Day 100, one heart left",
+      "format": "Game UI story"
+    },
+    "03-roblox-escape-in-59.jpg": {
+      "title": "Escape in 00:59",
+      "format": "Countdown"
+    },
+    "04-minecraft-max-armor.jpg": {
+      "title": "Max armor",
+      "format": "Showcase"
+    },
+    "05-roblox-dont-fall.jpg": {
+      "title": "Don't fall",
+      "format": "Obby challenge"
+    },
+    "06-minecraft-day-100.jpg": {
+      "title": "Day 100",
+      "format": "Hardcore"
+    },
+    "07-roblox-secret-base.jpg": {
+      "title": "Secret base?",
+      "format": "Story"
+    },
+    "08-minecraft-server-new-season.jpg": {
+      "title": "New season",
+      "format": "Server key art"
+    }
+  },
+  "before-after": {
+    "01-roblox-dont-fall.jpg": {
+      "title": "Same obby moment, redesigned to earn the click"
+    },
+    "02-minecraft-day-100.jpg": {
+      "title": "Dim landscape becomes a blood moon standoff"
+    },
+    "03-roblox-secret-base.jpg": {
+      "title": "A dark room becomes a glowing secret"
+    }
+  }
+}

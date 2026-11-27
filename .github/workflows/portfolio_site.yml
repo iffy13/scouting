@@ -1,0 +1,39 @@
+name: Portfolio site
+
+# Publishes the site/ folder to GitHub Pages: https://iffy13.github.io/scouting/
+# Add a thumbnail by uploading an image to site/work (or site/before-after); this runs by itself and the new
+# piece is live about a minute later. One time setup: Settings, Pages, Source: GitHub Actions.
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", ".github/workflows/portfolio_site.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build the gallery list
+        run: python site/build.py
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

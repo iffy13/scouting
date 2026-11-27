@@ -1,0 +1,72 @@
+{
+ "work": [
+  {
+   "src": "work/01-roblox-whos-faster.jpg",
+   "game": "roblox",
+   "title": "Who's faster?",
+   "format": "VS duel"
+  },
+  {
+   "src": "work/02-minecraft-day-100-one-heart.jpg",
+   "game": "minecraft",
+   "title": "Day 100, one heart left",
+   "format": "Game UI story"
+  },
+  {
+   "src": "work/03-roblox-escape-in-59.jpg",
+   "game": "roblox",
+   "title": "Escape in 00:59",
+   "format": "Countdown"
+  },
+  {
+   "src": "work/04-minecraft-max-armor.jpg",
+   "game": "minecraft",
+   "title": "Max armor",
+   "format": "Showcase"
+  },
+  {
+   "src": "work/05-roblox-dont-fall.jpg",
+   "game": "roblox",
+   "title": "Don't fall",
+   "format": "Obby challenge"
+  },
+  {
+   "src": "work/06-minecraft-day-100.jpg",
+   "game": "minecraft",
+   "title": "Day 100",
+   "format": "Hardcore"
+  },
+  {
+   "src": "work/07-roblox-secret-base.jpg",
+   "game": "roblox",
+   "title": "Secret base?",
+   "format": "Story"
+  },
+  {
+   "src": "work/08-minecraft-server-new-season.jpg",
+   "game": "minecraft",
+   "title": "New season",
+   "format": "Server key art"
+  }
+ ],
+ "beforeAfter": [
+  {
+   "src": "before-after/01-roblox-dont-fall.jpg",
+   "game": "roblox",
+   "title": "Same obby moment, redesigned to earn the click",
+   "format": ""
+  },
+  {
+   "src": "before-after/02-minecraft-day-100.jpg",
+   "game": "minecraft",
+   "title": "Dim landscape becomes a blood moon standoff",
+   "format": ""
+  },
+  {
+   "src": "before-after/03-roblox-secret-base.jpg",
+   "game": "roblox",
+   "title": "A dark room becomes a glowing secret",
+   "format": ""
+  }
+ ]
+}
