@@ -189,6 +189,40 @@ OPT_OUT = ["If this isn't relevant, just let me know and I won't email again.",
            "Not relevant? Just reply no and I'll leave it there.",
            "If you'd rather not hear from me, a quick reply is enough and I won't write again."]
 
+# ---- Small creators (under 5,000 subscribers): notice them, give one true insight, offer a sample on me.
+SMALL_SUBJECTS = ["{name}", "idea for your next video", "quick idea for {name}", "thumbnail idea for {name}",
+                  "a Short from your last video?", "your Roblox videos", "about your last upload"]
+SMALL_OPEN_T = ["I came across \"{title}\" while looking at newer Roblox channels.",
+                "Found your channel through \"{title}\".",
+                "\"{title}\" came up while I was looking at smaller Roblox creators.",
+                "I ran into \"{title}\" while going through Roblox creators who are just getting started."]
+SMALL_OPEN = ["I came across your channel while looking at newer Roblox creators.",
+              "Found your channel while looking at Roblox creators who are just getting started.",
+              "Your channel came up while I was looking through smaller Roblox creators."]
+INSIGHT_NEW = ["At this stage the thumbnail and the first few seconds decide most of the views, more than how often you upload.",
+               "When a channel is new, YouTube shows each video to a small group first, so how many people tap the thumbnail matters a lot.",
+               "Most newer Roblox channels I see have fine gameplay but thumbnails that blend in next to the big creators.",
+               "Shorts cut from your best moments are usually the quickest way to get the first few thousand views."]
+INSIGHT_MID = ["Getting past 1,000 is the hard part. From here it usually comes down to thumbnails and how fast a video gets to the point.",
+               "Around your size, the videos that take off are usually the ones with a clear thumbnail and a strong first 10 seconds.",
+               "At your size a few Shorts from your best moments can bring a lot of new people to the long videos."]
+OFFER_T = ["I make Roblox thumbnails and edits, and I'd be happy to cut one Short from \"{title}\" on me so you can see if it brings views.",
+           "I edit Roblox videos and make thumbnails. I can redo the thumbnail for \"{title}\" at no charge so you can compare the two.",
+           "I do Roblox editing and thumbnails, and I can send 3 quick notes on \"{title}\", no strings attached."]
+OFFER = ["I make Roblox thumbnails and edits, and I'd be happy to do one thumbnail for your next upload on me so you can see if it gets more clicks.",
+         "I edit Roblox videos. I can cut one Short from one of your videos at no charge so you can test it.",
+         "I do Roblox thumbnails and editing. I can send 3 quick notes on your last few thumbnails, no strings attached."]
+ASK = ["Want me to do that?", "Should I send it over?", "Would that be useful?", "Want me to give it a go?",
+       "Interested?"]
+FOLLOW_SMALL = [
+    "Quick idea while I'm here: on thumbnails, one big face or character and three words or fewer usually beats a busy screenshot. Still happy to make one for your next upload if you want.",
+    "One thing that tends to help newer Roblox channels: show the best moment in the first 5 seconds, then explain how you got there. Happy to make you a thumbnail on me if you want to test it.",
+    "Small tip: a Short made from the best 20 seconds of each video brings new viewers back to the long one. I can make the first one if you want.",
+]
+SERVER_OFFER = ["If it helps, I can put together a 15 second clip for your listing at no charge so you can see if it brings more joins.",
+                "Happy to make a short clip for the server listing on me, so you can test it before deciding anything.",
+                ""]
+
 FOLLOW_UPS = [
     "Hey, just bringing this back up in case it got buried. {question}",
     "Quick follow up on my note from last week. {question} No worries if the timing isn't right.",
@@ -227,8 +261,46 @@ def for_niche(text, lead):
     return text
 
 
+def clean_title(t):
+    t = re.sub(r"#\w+", "", t or "")
+    t = re.sub(r"[^\w\s'!?.,:&()\-]", "", t).strip(" -|:")
+    t = re.sub(r"([!?.])[!?.]+", r"\1", t)
+    t = re.sub(r"\s{2,}", " ", t)
+    if SPAM_WORDS.search(t):
+        return ""  # a title with words like "free" or a link would trip the spam check, so it is left out
+    if len(t) < 6 or t.isupper() and len(t) > 25:
+        return ""
+    return t if len(t) <= 60 else t[:57].rsplit(" ", 1)[0] + "..."
+
+
+def is_small(lead):
+    subs = lead.get("subscribers")
+    return kind_of(lead) == "YT" and isinstance(subs, int) and subs < 5000
+
+
+def compose_small(lead):
+    name, r = clean_name(lead), _rng(lead, "small")
+    title = clean_title(lead.get("latest_title", ""))
+    subs = lead.get("subscribers") or 0
+    subject = _fill(r.choice(SMALL_SUBJECTS), name)
+    if not (name and subject.startswith(name)):
+        subject = subject[0].lower() + subject[1:] if r.random() < 0.6 else subject[0].upper() + subject[1:]
+    opener = r.choice(SMALL_OPEN_T) if title else r.choice(SMALL_OPEN)
+    insight = r.choice(INSIGHT_NEW if subs < 1000 else INSIGHT_MID)
+    offer = r.choice(OFFER_T) if title and r.random() < 0.7 else r.choice(OFFER)
+    lines = [_fill(r.choice(GREETINGS["YT"]), name), "", opener + " " + insight, "", offer + " " + r.choice(ASK)]
+    sign = r.choice(SIGNOFF)
+    lines += ["", (sign + "\n" + FIRST_NAME) if sign else FIRST_NAME, "", r.choice(OPT_OUT)]
+    if POSTAL_ADDRESS:
+        lines.append(POSTAL_ADDRESS)
+    subject, body = for_niche(subject, lead), for_niche("\n".join(lines), lead)
+    return subject, body.replace("{title}", title)  # titles go in after the game swap, unchanged
+
+
 def compose(lead):
     """(subject, body) for the first email. Same lead always gets the same email, different leads differ."""
+    if is_small(lead):
+        return compose_small(lead)
     kind, name = kind_of(lead), clean_name(lead)
     r = _rng(lead)
     subject = _fill(r.choice(SUBJECTS[kind]), name)
@@ -243,7 +315,7 @@ def compose(lead):
         lines += [" ".join(para), "", question]
     else:
         lines += [para[0], "", para[1] + " " + question]
-    sample = r.choice(SAMPLE)
+    sample = r.choice(SERVER_OFFER) if kind == "SERVER" else r.choice(SAMPLE)
     if sample:
         lines[-1] += " " + sample
     sign = r.choice(SIGNOFF)
@@ -258,7 +330,7 @@ def compose_followup(lead):
     kind = kind_of(lead)
     r = _rng(lead, "followup")
     question = r.choice(QUESTION[kind])
-    body = r.choice(FOLLOW_UPS).format(question=question)
+    body = r.choice(FOLLOW_SMALL) if is_small(lead) else r.choice(FOLLOW_UPS).format(question=question)
     sign = r.choice(FU_SIGN)
     text = body + "\n\n" + ((sign + "\n" + FIRST_NAME) if sign else FIRST_NAME)
     text += "\n\n" + r.choice(OPT_OUT) + (("\n" + POSTAL_ADDRESS) if POSTAL_ADDRESS else "")
@@ -603,6 +675,10 @@ def preview(n):
         {"email": "agency@brandverse.example", "channel": "Brandverse", "channel_id": "brandverse.example", "source": "web_agency"},
         {"email": "owner@craftia.example", "channel": "Craftia Network", "channel_id": "craftia.example", "source": "web_server", "niche": "minecraft"},
         {"email": "blocky.bob@gmail.com", "channel": "Blocky Bob", "channel_id": "UCy", "source": "youtube_comments", "niche": "minecraft"},
+        {"email": "tiny.creator@gmail.com", "channel": "PixelPete", "channel_id": "UCz", "source": "youtube_api", "niche": "roblox",
+         "subscribers": 240, "latest_title": "Brookhaven but I'm a Secret Agent #roblox", "latest_views": 37},
+        {"email": "mid.creator@gmail.com", "channel": "CraftyCara", "channel_id": "UCw", "source": "youtube_comments", "niche": "minecraft",
+         "subscribers": 2300, "latest_title": "I Built a Castle in Hardcore Minecraft"},
         {"email": "lia.makes@gmail.com", "channel": "Lia (@liamakes) | Linktree", "channel_id": "linktr.ee/liamakes", "source": "web_creator"},
     ]
     for l in leads[:n]:
@@ -627,6 +703,16 @@ def selftest():
         fs, fb = compose_followup(dict(l, sent_subject=s))
         assert fs.startswith("Re: ") and not lint(fs, fb), (fs, fb)
     assert len(bodies) > 150, len(bodies)
+    for i in range(200):
+        l = {"email": f"kid{i}@gmail.com", "channel": f"Maker{i}", "source": "youtube_api", "subscribers": 50 + i * 20,
+             "latest_title": ["I Survived 100 Days in Hardcore Minecraft!! #shorts", "", "Brookhaven but I'm a Spy"][i % 3],
+             "niche": ["roblox", "minecraft"][i % 2]}
+        s_, b_ = compose(l)
+        assert not lint(s_, b_) and "{" not in s_ + b_ and "free" not in b_.lower(), (s_, b_, lint(s_, b_))
+        if l["niche"] == "minecraft":
+            assert "Roblox" not in b_, b_
+        fs, fb = compose_followup(dict(l, sent_subject=s_))
+        assert not lint(fs, fb) and "Roblox" not in fb if l["niche"] == "minecraft" else True, fb
     for src in ("web_server", "youtube_api", "web_studio", "web_edu", "web_creator"):
         s_, b_ = compose({"email": f"x@{src}.com", "channel": "Craftia", "channel_id": "craftia.net", "source": src,
                           "niche": "minecraft"})

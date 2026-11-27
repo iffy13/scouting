@@ -457,12 +457,13 @@ def check_channels(cids, last_upload, niche, source, seen, need_word=False):
     for i in range(0, len(cids), 50):
         batch = cids[i:i + 50]
         try:
-            data = yt_get("channels", {"part": "snippet,statistics", "id": ",".join(batch), "maxResults": 50})
+            data = yt_get("channels", {"part": "snippet,statistics,contentDetails", "id": ",".join(batch), "maxResults": 50})
         except urllib.error.HTTPError as e:
             print(f"YouTube channels failed (HTTP {e.code})")
             break
         for ch in data.get("items", []):
             cid, sn, st = ch["id"], ch["snippet"], ch.get("statistics", {})
+            uploads = ch.get("contentDetails", {}).get("relatedPlaylists", {}).get("uploads", "")
             checked.append(f"yt:{cid}")
             subs = int(st.get("subscriberCount", 0) or 0)
             desc = sn.get("description", "")
@@ -482,8 +483,33 @@ def check_channels(cids, last_upload, niche, source, seen, need_word=False):
                 "subscribers": subs, "videos": int(st.get("videoCount", 0) or 0),
                 "country": sn.get("country", ""), "last_upload": (last_upload.get(cid, "") or "")[:10],
                 "angle": angle_for(sn.get("title", "") + " " + desc, niche), "key": f"yt:{cid}",
+                "uploads": uploads,
             })
+    for l in leads:
+        add_latest_video(l)
     return leads, checked
+
+
+def add_latest_video(lead):
+    """Latest upload title and views, so the email can mention a real video. About 2 units per lead."""
+    pl = lead.pop("uploads", "")
+    if not pl:
+        return
+    try:
+        items = yt_get("playlistItems", {"part": "contentDetails,snippet", "playlistId": pl, "maxResults": 3}).get("items", [])
+        ids = [i["contentDetails"]["videoId"] for i in items]
+        if not ids:
+            return
+        stats = {v["id"]: int(v.get("statistics", {}).get("viewCount", 0) or 0)
+                 for v in yt_get("videos", {"part": "statistics", "id": ",".join(ids)}).get("items", [])}
+    except Exception as e:
+        print(f"latest video lookup failed: {type(e).__name__}")
+        return
+    first = items[0]["snippet"]
+    lead["latest_title"] = first.get("title", "")
+    lead["latest_views"] = stats.get(ids[0], 0)
+    lead["avg_views"] = sum(stats.values()) // max(1, len(stats))
+    lead["last_upload"] = lead.get("last_upload") or (items[0]["contentDetails"].get("videoPublishedAt") or "")[:10]
 
 
 def _slot(n_items, per_run):
