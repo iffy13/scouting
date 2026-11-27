@@ -339,6 +339,38 @@ def sent_today(leads):
         sum(1 for l in leads if (l.get("followup_at") or "")[:10] == today)
 
 
+# =========================================================================== domain check
+def domain_report(mailbox):
+    """SPF, DKIM and DMARC for the sending domain. These decide whether Gmail trusts the mail at all."""
+    domain = mailbox.split("@", 1)[1].lower()
+    if domain in ("gmail.com", "googlemail.com"):
+        return domain, True, "Sending from a Gmail address: Google signs it, nothing to set up."
+    try:
+        import dns.resolver
+    except ImportError:
+        return domain, True, "dnspython missing, domain not checked"
+
+    def txt(name):
+        try:
+            return [b"".join(r.strings).decode("utf-8", "ignore") for r in dns.resolver.resolve(name, "TXT", lifetime=10)]
+        except Exception:
+            return []
+    spf = [t for t in txt(domain) if t.lower().startswith("v=spf1")]
+    dmarc = [t for t in txt("_dmarc." + domain) if t.lower().startswith("v=dmarc1")]
+    dkim_sel = [sel for sel in ("default", "mail", "dkim", "selector1", "selector2", "google", "k1", "s1", "zoho", "x")
+                if any("p=" in t for t in txt(f"{sel}._domainkey.{domain}"))]
+    ok = bool(spf) and bool(dmarc) and bool(dkim_sel)
+    lines = [f"Domain check for {domain}:",
+             f"SPF: {'OK  ' + spf[0][:120] if spf else 'MISSING'}",
+             f"DKIM: {'OK (selector ' + ', '.join(dkim_sel) + ')' if dkim_sel else 'NOT FOUND on common selectors'}",
+             f"DMARC: {'OK  ' + dmarc[0][:120] if dmarc else 'MISSING'}"]
+    if not ok:
+        lines.append("Gmail sends mail without these to spam far more often. In your hosting panel (cPanel: "
+                     "Email Deliverability, click Repair) turn on SPF and DKIM, and add a TXT record named _dmarc "
+                     "with the value  v=DMARC1; p=none; rua=mailto:" + mailbox)
+    return domain, ok, "\n".join(lines)
+
+
 # =========================================================================== run
 def run():
     leads = load_leads()
@@ -357,6 +389,18 @@ def run():
                  "variable to a connected address. Nothing was sent.")
         return
     print(f"sending from {mask(mailbox)}")
+    domain, dom_ok, dom_text = domain_report(mailbox)
+    print(dom_text)
+    flag = os.path.join(STATE_DIR, "domain_checked.txt")
+    try:
+        last = open(flag).read().strip()
+    except Exception:
+        last = ""
+    if last != now().date().isoformat() + str(dom_ok):
+        telegram(dom_text)
+        if not DRY:
+            os.makedirs(STATE_DIR, exist_ok=True)
+            open(flag, "w").write(now().date().isoformat() + str(dom_ok))
     report = {"replied": [], "bounced": 0, "first": [], "followups": 0, "failed": 0}
 
     # 1. replies and bounces
