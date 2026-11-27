@@ -1,0 +1,547 @@
+<title>Thumbnail Forge</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Bangers&family=Lilita+One&family=Luckiest+Guy&family=Inter:wght@400;500;600&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<style>
+/* Layout: workbench. Big live canvas on the left (sticky on desktop), stacked control groups on the right; one column on phones. */
+:root {
+  --bg: #eef0f5;
+  --panel: #ffffff;
+  --sunk: #f6f7fa;
+  --fg: #151821;
+  --muted: #5a6072;
+  --line: #dde1ea;
+  --accent: #ffcf1a;
+  --accent-ink: #1b1600;
+  --blue: #2457ff;
+  --ok: #138a4b;
+  --warn: #b25b00;
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-head: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1116; --panel: #181b22; --sunk: #13161c; --fg: #eceef4; --muted: #9aa1b2; --line: #2a2f3a;
+    --accent: #ffd21f; --accent-ink: #1b1600; --blue: #6d8dff; --ok: #3fcf83; --warn: #ffab4a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1116; --panel: #181b22; --sunk: #13161c; --fg: #eceef4; --muted: #9aa1b2; --line: #2a2f3a;
+  --accent: #ffd21f; --accent-ink: #1b1600; --blue: #6d8dff; --ok: #3fcf83; --warn: #ffab4a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 14px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 40px;
+}
+header.top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin: 0 auto 16px; max-width: 1360px; }
+header.top h1 { font-family: var(--font-head); font-weight: 800; font-size: 1.7rem; letter-spacing: -0.01em; margin: 0; }
+header.top h1 span { background: var(--accent); color: var(--accent-ink); padding: 0 .3em; border-radius: 6px; }
+header.top p { margin: 0; color: var(--muted); max-width: 70ch; }
+.wrap { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr); gap: 18px; max-width: 1360px; margin: 0 auto; align-items: start; }
+@media (max-width: 900px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
+.stage { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); display: grid; gap: 12px; min-width: 0; }
+@media (max-width: 900px) { .stage { position: static; } }
+.canvas-box { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; }
+#main { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; max-width: 100%; border-radius: 6px; background: #000; }
+.drop-hint { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; color: var(--muted); font-size: 12.5px; margin-top: 8px; }
+.drop-hint b { color: var(--fg); font-weight: 600; }
+.checks { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 12px; align-items: end; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; }
+@media (max-width: 560px) { .checks { grid-template-columns: repeat(2, minmax(0, 1fr)); } .checks .tips { grid-column: 1 / -1; } }
+.mini { display: grid; gap: 4px; justify-items: start; }
+.mini { min-width: 0; }
+.mini canvas { border-radius: 4px; display: block; max-width: 100%; height: auto; }
+.mini span, .label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+.tips { font-size: 12.5px; color: var(--muted); min-width: 0; }
+.tips ul { margin: 4px 0 0; padding-left: 18px; }
+.tips li.ok::marker { color: var(--ok); }
+.tips li.bad { color: var(--warn); }
+.controls { display: grid; gap: 12px; min-width: 0; }
+section.group { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px 14px; display: grid; gap: 10px; min-width: 0; }
+section.group h2 { margin: 0; font-family: var(--font-head); font-weight: 600; font-size: 1.02rem; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+section.group h2 small { font-family: var(--font-ui); font-weight: 500; font-size: 12px; color: var(--muted); }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1px solid var(--line); background: var(--sunk); color: var(--fg); border-radius: 999px; padding: 7px 12px; font: 600 13px var(--font-ui); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.chip:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.row { display: grid; grid-template-columns: 92px minmax(0, 1fr) 42px; align-items: center; gap: 8px; }
+.row label { font-size: 12.5px; color: var(--muted); }
+.row output { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--muted); text-align: right; }
+input[type="range"] { width: 100%; accent-color: var(--blue); }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field label { font-size: 12.5px; color: var(--muted); }
+input[type="text"], input[type="number"], select, textarea {
+  width: 100%; min-width: 0; font: 500 14px var(--font-ui); color: var(--fg); background: var(--sunk);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+}
+textarea { min-height: 150px; resize: vertical; line-height: 1.5; }
+input[type="color"] { width: 100%; height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--sunk); padding: 2px; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+button.btn { font: 600 13.5px var(--font-ui); border-radius: 8px; padding: 9px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--sunk); color: var(--fg); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.file { position: relative; overflow: hidden; display: inline-flex; }
+.file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+.note { font-size: 12.5px; color: var(--muted); margin: 0; }
+.out { display: grid; gap: 10px; }
+.out img { width: 100%; height: auto; border-radius: 6px; border: 1px solid var(--line); display: block; }
+.out figure { margin: 0; display: grid; gap: 4px; }
+.out figcaption { font-size: 12px; color: var(--muted); }
+details summary { cursor: pointer; font-weight: 600; font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="top">
+  <h1>Thumbnail <span>Forge</span></h1>
+  <p>Roblox and Minecraft thumbnails in the styles that are winning right now: bright paired colors, an outlined character, two to four huge words. Build a sample in minutes and send it as a before and after.</p>
+</header>
+
+<div class="wrap">
+  <div class="stage">
+    <div class="canvas-box">
+      <canvas id="main" width="1280" height="720" aria-label="Thumbnail preview, 1280 by 720"></canvas>
+      <div class="drop-hint"><span id="srcNote"><b>Example scene.</b> Drop, paste or upload a screenshot to start a real one.</span><span>1280 × 720, YouTube size</span></div>
+    </div>
+    <div class="checks">
+      <div class="mini"><canvas id="mobile" width="246" height="138"></canvas><span>Phone feed</span></div>
+      <div class="mini"><canvas id="tiny" width="168" height="94"></canvas><span>Up next / search</span></div>
+      <div class="tips"><span class="label">Readability check</span><ul id="tipList"></ul></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <section class="group" aria-labelledby="g-style">
+      <h2 id="g-style">Style <small>start here, then adjust</small></h2>
+      <div class="presets" id="presets" role="group" aria-label="Style presets"></div>
+      <p class="note" id="presetNote"></p>
+    </section>
+
+    <section class="group" aria-labelledby="g-bg">
+      <h2 id="g-bg">Background <small>screenshot or their current thumbnail</small></h2>
+      <div class="btns">
+        <span class="file btn">Upload image<input id="bgFile" type="file" accept="image/*" aria-label="Upload background image"></span>
+        <button class="btn" id="bgExample" type="button">Use example scene</button>
+      </div>
+      <div class="row"><label for="bright">Brightness</label><input id="bright" type="range" min="-40" max="40" value="6"><output for="bright"></output></div>
+      <div class="row"><label for="contrast">Contrast</label><input id="contrast" type="range" min="-30" max="60" value="22"><output for="contrast"></output></div>
+      <div class="row"><label for="sat">Color pop</label><input id="sat" type="range" min="-50" max="100" value="45"><output for="sat"></output></div>
+      <div class="row"><label for="blur">Blur behind</label><input id="blur" type="range" min="0" max="8" value="1"><output for="blur"></output></div>
+      <div class="row"><label for="vignette">Vignette</label><input id="vignette" type="range" min="0" max="90" value="35"><output for="vignette"></output></div>
+      <div class="two">
+        <div class="field"><label for="grade">Color grade</label>
+          <select id="grade"><option value="none">None</option><option value="tealorange">Teal and orange</option><option value="warm">Warm sunset</option><option value="cool">Cool night</option><option value="hardcore">Hardcore red</option></select></div>
+        <div class="field"><label for="rays">Light rays</label>
+          <select id="rays"><option value="0">Off</option><option value="1">Soft</option><option value="2">Strong</option></select></div>
+      </div>
+    </section>
+
+    <section class="group" aria-labelledby="g-char">
+      <h2 id="g-char">Character <small>avatar or skin cut-out (PNG)</small></h2>
+      <div class="btns">
+        <span class="file btn">Upload cut-out<input id="charFile" type="file" accept="image/png,image/webp,image/*" aria-label="Upload character cut-out"></span>
+        <button class="btn" id="charExample" type="button">Example avatar</button>
+        <button class="btn" id="charNone" type="button">No character</button>
+      </div>
+      <div class="row"><label for="cx">Left / right</label><input id="cx" type="range" min="0" max="100" value="74"><output for="cx"></output></div>
+      <div class="row"><label for="cy">Up / down</label><input id="cy" type="range" min="0" max="100" value="62"><output for="cy"></output></div>
+      <div class="row"><label for="cscale">Size</label><input id="cscale" type="range" min="20" max="160" value="96"><output for="cscale"></output></div>
+      <div class="row"><label for="outline">Outline</label><input id="outline" type="range" min="0" max="24" value="10"><output for="outline"></output></div>
+      <div class="row"><label for="glow">Glow</label><input id="glow" type="range" min="0" max="60" value="24"><output for="glow"></output></div>
+      <div class="two">
+        <div class="field"><label for="outlineColor">Outline color</label><input id="outlineColor" type="color" value="#ffffff"></div>
+        <div class="field"><label class="check" for="flip"><input id="flip" type="checkbox"> Mirror</label></div>
+      </div>
+    </section>
+
+    <section class="group" aria-labelledby="g-text">
+      <h2 id="g-text">Text <small id="wordCount"></small></h2>
+      <div class="two">
+        <div class="field"><label for="line1">Line 1</label><input id="line1" type="text" value="TRAPPED" maxlength="24"></div>
+        <div class="field"><label for="line2">Line 2</label><input id="line2" type="text" value="FOR 24H" maxlength="24"></div>
+      </div>
+      <div class="two">
+        <div class="field"><label for="font">Font</label>
+          <select id="font"><option>Luckiest Guy</option><option>Lilita One</option><option>Bangers</option><option>Anton</option></select></div>
+        <div class="field"><label for="tpos">Position</label>
+          <select id="tpos"><option value="left">Left</option><option value="top">Top</option><option value="right">Right</option><option value="bottom">Bottom</option></select></div>
+      </div>
+      <div class="row"><label for="tsize">Size</label><input id="tsize" type="range" min="60" max="240" value="150"><output for="tsize"></output></div>
+      <div class="row"><label for="tstroke">Outline</label><input id="tstroke" type="range" min="0" max="30" value="16"><output for="tstroke"></output></div>
+      <div class="row"><label for="trot">Tilt</label><input id="trot" type="range" min="-12" max="12" value="-4"><output for="trot"></output></div>
+      <div class="two">
+        <div class="field"><label for="tfill">Fill</label><input id="tfill" type="color" value="#ffd21f"></div>
+        <div class="field"><label for="tstrokeColor">Outline color</label><input id="tstrokeColor" type="color" value="#0d2bb8"></div>
+      </div>
+    </section>
+
+    <section class="group" aria-labelledby="g-st">
+      <h2 id="g-st">Extras <small>use one, not both</small></h2>
+      <label class="check" for="arrowOn"><input id="arrowOn" type="checkbox"> Red arrow</label>
+      <div class="row"><label for="ax">Arrow x</label><input id="ax" type="range" min="0" max="100" value="55"><output for="ax"></output></div>
+      <div class="row"><label for="ay">Arrow y</label><input id="ay" type="range" min="0" max="100" value="58"><output for="ay"></output></div>
+      <div class="row"><label for="arot">Arrow angle</label><input id="arot" type="range" min="-180" max="180" value="20"><output for="arot"></output></div>
+      <label class="check" for="circleOn"><input id="circleOn" type="checkbox"> Red circle</label>
+      <div class="row"><label for="ox">Circle x</label><input id="ox" type="range" min="0" max="100" value="40"><output for="ox"></output></div>
+      <div class="row"><label for="oy">Circle y</label><input id="oy" type="range" min="0" max="100" value="62"><output for="oy"></output></div>
+      <label class="check" for="safe"><input id="safe" type="checkbox" checked> Show the video length badge (preview only)</label>
+    </section>
+
+    <section class="group" aria-labelledby="g-out">
+      <h2 id="g-out">Export <small>save the image, then reply</small></h2>
+      <div class="btns">
+        <button class="btn primary" id="exportBtn" type="button">Make thumbnail</button>
+        <button class="btn" id="baBtn" type="button">Make before and after</button>
+      </div>
+      <p class="note">The image appears below. Right click it (or press and hold on a phone) and choose Save image.</p>
+      <div class="out" id="out"></div>
+    </section>
+
+    <section class="group" aria-labelledby="g-reply">
+      <h2 id="g-reply">Reply to send with it</h2>
+      <div class="two">
+        <div class="field"><label for="rName">Their name</label><input id="rName" type="text" value="PixelPete"></div>
+        <div class="field"><label for="rTitle">Their video</label><input id="rTitle" type="text" value="Brookhaven but I'm a Secret Agent"></div>
+      </div>
+      <div class="two">
+        <div class="field"><label for="pOne">Price per thumbnail ($)</label><input id="pOne" type="number" min="1" value="15"></div>
+        <div class="field"><label for="pPack">Monthly pack ($, 8 thumbnails)</label><input id="pPack" type="number" min="1" value="90"></div>
+      </div>
+      <div class="field"><label for="rDays">Turnaround</label>
+        <select id="rDays"><option value="24 hours">24 hours</option><option value="48 hours" selected>48 hours</option><option value="3 days">3 days</option></select></div>
+      <div class="field"><label for="reply">Message</label><textarea id="reply" spellcheck="true"></textarea></div>
+      <div class="btns"><button class="btn primary" id="copyBtn" type="button">Copy message</button><span class="note" id="copyNote" role="status"></span></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(() => {
+  const W = 1280, H = 720;
+  const $ = (id) => document.getElementById(id);
+  const main = $("main"), mctx = main.getContext("2d");
+  const state = { bg: null, bgIsExample: true, char: null, preset: "roblox" };
+  let processed = null, processedKey = "";
+
+  /* ---------- example scene and avatar (drawn, so the tool works before any upload) ---------- */
+  function exampleScene() {
+    const c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
+    const sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, "#5fb6ff"); sky.addColorStop(0.65, "#bfe6ff"); g.fillStyle = sky; g.fillRect(0, 0, W, H);
+    g.fillStyle = "#fff6c9"; g.fillRect(980, 70, 110, 110);
+    g.fillStyle = "rgba(255,255,255,.92)";
+    [[120, 90, 220, 40], [160, 70, 120, 30], [620, 130, 260, 44], [680, 110, 120, 30]].forEach(([x, y, w, h]) => g.fillRect(x, y, w, h));
+    const B = 64;
+    for (let row = 0; row < 4; row++) {
+      for (let x = -B; x < W + B; x += B) {
+        const y = 470 + row * B - ((x / B) % 3 === 0 && row === 0 ? B : 0);
+        g.fillStyle = row === 0 ? "#4fbf3a" : (row === 1 ? "#8a5a34" : "#7b7b7b");
+        g.fillRect(x, y, B, B);
+        g.fillStyle = "rgba(0,0,0,.12)"; g.fillRect(x, y + B - 6, B, 6); g.fillRect(x + B - 4, y, 4, B);
+        if (row === 0) { g.fillStyle = "#3a9c2a"; g.fillRect(x, y + 14, B, 8); }
+      }
+    }
+    [[140, 470], [420, 406], [1150, 470]].forEach(([tx, ty]) => {
+      g.fillStyle = "#7a4e2b"; g.fillRect(tx, ty - 192, 48, 192);
+      g.fillStyle = "#2f8f2f"; g.fillRect(tx - 72, ty - 320, 192, 140); g.fillStyle = "#287d28"; g.fillRect(tx - 40, ty - 380, 128, 70);
+    });
+    g.fillStyle = "#c33"; g.fillRect(560, 340, 130, 130); g.fillStyle = "#e9c46a"; g.fillRect(560, 390, 130, 18);
+    return c;
+  }
+  function exampleAvatar() {
+    const c = document.createElement("canvas"); c.width = 360; c.height = 620; const g = c.getContext("2d");
+    const R = (col, x, y, w, h) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+    R("#f2c9a0", 100, 10, 160, 160);                // head
+    R("#4a2b1a", 100, 10, 160, 46); R("#4a2b1a", 100, 10, 26, 90); R("#4a2b1a", 234, 10, 26, 70); // hair
+    R("#ffffff", 128, 76, 38, 34); R("#ffffff", 196, 76, 38, 34); R("#1b1b1b", 140, 84, 18, 22); R("#1b1b1b", 208, 84, 18, 22);
+    R("#5a1e14", 160, 124, 42, 34); R("#ff8a8a", 166, 144, 30, 12); // open mouth: shocked face
+    R("#2b6cff", 90, 176, 180, 200);               // torso
+    R("#f2c9a0", 22, 140, 64, 150); R("#2b6cff", 22, 176, 64, 70); // left arm raised
+    R("#f2c9a0", 274, 186, 64, 180); R("#2b6cff", 274, 186, 64, 70);
+    R("#24324a", 90, 376, 86, 230); R("#24324a", 184, 376, 86, 230); R("#151515", 90, 580, 86, 26); R("#151515", 184, 580, 86, 26);
+    return c;
+  }
+
+  /* ---------- presets from current Roblox and Minecraft thumbnail trends ---------- */
+  const PRESETS = {
+    roblox: { label: "Roblox pop", note: "Avatar with a white outline and glow, yellow on blue text, saturated scene. The most common look in Roblox gameplay thumbnails.",
+      v: { bright: 6, contrast: 22, sat: 45, blur: 1, vignette: 30, grade: "none", rays: "1", outline: 10, glow: 24, outlineColor: "#ffffff",
+           font: "Luckiest Guy", tfill: "#ffd21f", tstrokeColor: "#0d2bb8", tstroke: 16, tsize: 150, trot: -4, tpos: "left", line1: "TRAPPED", line2: "FOR 24H", arrowOn: false, circleOn: false } },
+    hardcore: { label: "Minecraft hardcore", note: "Dark red grade, heavy vignette, white text on black. Fits hardcore, 100 days and survival videos.",
+      v: { bright: -6, contrast: 34, sat: 10, blur: 2, vignette: 75, grade: "hardcore", rays: "0", outline: 8, glow: 34, outlineColor: "#ff3b30",
+           font: "Anton", tfill: "#ffffff", tstrokeColor: "#000000", tstroke: 14, tsize: 170, trot: 0, tpos: "left", line1: "100 DAYS", line2: "HARDCORE", arrowOn: false, circleOn: false } },
+    challenge: { label: "Challenge", note: "Orange and teal, one red arrow at the key thing. Fits 'but', 'vs' and challenge videos.",
+      v: { bright: 8, contrast: 26, sat: 55, blur: 1, vignette: 25, grade: "tealorange", rays: "2", outline: 12, glow: 18, outlineColor: "#ffffff",
+           font: "Lilita One", tfill: "#ff8a00", tstrokeColor: "#ffffff", tstroke: 14, tsize: 140, trot: -5, tpos: "top", line1: "NOOB VS PRO", line2: "", arrowOn: true, circleOn: false } },
+    story: { label: "Story drama", note: "Cool grade, blurred scene, the character large and shocked, one short phrase. Fits Roblox stories and animations.",
+      v: { bright: 0, contrast: 18, sat: 20, blur: 4, vignette: 55, grade: "cool", rays: "0", outline: 9, glow: 30, outlineColor: "#9fe3ff",
+           font: "Bangers", tfill: "#ffffff", tstrokeColor: "#14213d", tstroke: 14, tsize: 150, trot: -3, tpos: "left", line1: "SHE LIED", line2: "", arrowOn: false, circleOn: true } },
+    shader: { label: "Clean shader", note: "No text, warm light, the build or the character carries it. Many new big hits go without text.",
+      v: { bright: 10, contrast: 14, sat: 28, blur: 0, vignette: 35, grade: "warm", rays: "1", outline: 0, glow: 0, outlineColor: "#ffffff",
+           font: "Luckiest Guy", tfill: "#ffffff", tstrokeColor: "#000000", tstroke: 10, tsize: 120, trot: 0, tpos: "bottom", line1: "", line2: "", arrowOn: false, circleOn: false } },
+  };
+  const ids = ["bright", "contrast", "sat", "blur", "vignette", "grade", "rays", "cx", "cy", "cscale", "outline", "glow", "outlineColor", "flip",
+               "line1", "line2", "font", "tpos", "tsize", "tstroke", "trot", "tfill", "tstrokeColor", "arrowOn", "ax", "ay", "arot", "circleOn", "ox", "oy", "safe"];
+  const val = (id) => { const el = $(id); return el.type === "checkbox" ? el.checked : (el.type === "range" ? +el.value : el.value); };
+  function setVal(id, v) { const el = $(id); if (!el) return; if (el.type === "checkbox") el.checked = !!v; else el.value = v; }
+
+  function buildPresets() {
+    const box = $("presets");
+    Object.entries(PRESETS).forEach(([k, p]) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = p.label; b.dataset.k = k;
+      b.addEventListener("click", () => applyPreset(k)); box.appendChild(b);
+    });
+  }
+  function applyPreset(k) {
+    state.preset = k; const p = PRESETS[k];
+    Object.entries(p.v).forEach(([id, v]) => setVal(id, v));
+    document.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.k === k)));
+    $("presetNote").textContent = p.note;
+    syncOutputs(); render();
+  }
+
+  /* ---------- image processing ---------- */
+  function coverDraw(g, img, w, h) {
+    const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+    const s = Math.max(w / iw, h / ih), dw = iw * s, dh = ih * s;
+    g.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  }
+  function blurred(src, amount) {
+    if (!amount) return src;
+    let cur = src;
+    for (let i = 0; i < amount; i++) {
+      const f = 0.5; const t = document.createElement("canvas");
+      t.width = Math.max(8, Math.round(cur.width * f)); t.height = Math.max(8, Math.round(cur.height * f));
+      const tg = t.getContext("2d"); tg.imageSmoothingQuality = "high"; tg.drawImage(cur, 0, 0, t.width, t.height); cur = t;
+    }
+    const out = document.createElement("canvas"); out.width = W; out.height = H;
+    const og = out.getContext("2d"); og.imageSmoothingQuality = "high"; og.drawImage(cur, 0, 0, W, H);
+    return out;
+  }
+  function processBackground() {
+    const key = [state.bg && state.bg.__id, val("bright"), val("contrast"), val("sat"), val("blur"), val("grade")].join("|");
+    if (key === processedKey && processed) return processed;
+    const base = document.createElement("canvas"); base.width = W; base.height = H;
+    coverDraw(base.getContext("2d"), state.bg, W, H);
+    const c = blurred(base, Math.round(val("blur") / 2));
+    const g = c.getContext("2d"); const im = g.getImageData(0, 0, W, H); const d = im.data;
+    const br = val("bright") * 2.2, ct = (val("contrast") + 100) / 100, sa = (val("sat") + 100) / 100, grade = val("grade");
+    for (let i = 0; i < d.length; i += 4) {
+      let r = d[i], gg = d[i + 1], b = d[i + 2];
+      r = (r - 128) * ct + 128 + br; gg = (gg - 128) * ct + 128 + br; b = (b - 128) * ct + 128 + br;
+      const l = 0.299 * r + 0.587 * gg + 0.114 * b;
+      r = l + (r - l) * sa; gg = l + (gg - l) * sa; b = l + (b - l) * sa;
+      if (grade !== "none") {
+        const t = Math.min(1, Math.max(0, l / 255));
+        if (grade === "tealorange") { r += (t - 0.5) * 40; gg += (t - 0.5) * 8; b -= (t - 0.5) * 46; }
+        else if (grade === "warm") { r += 16; gg += 6; b -= 14; }
+        else if (grade === "cool") { r -= 14; gg += 2; b += 22; }
+        else if (grade === "hardcore") { r += 26 * (1 - t) + 10; gg -= 18; b -= 22; }
+      }
+      d[i] = r < 0 ? 0 : r > 255 ? 255 : r; d[i + 1] = gg < 0 ? 0 : gg > 255 ? 255 : gg; d[i + 2] = b < 0 ? 0 : b > 255 ? 255 : b;
+    }
+    g.putImageData(im, 0, 0);
+    processed = c; processedKey = key; return c;
+  }
+  function drawRays(g, cx, cy, strength) {
+    if (!strength) return;
+    g.save(); g.globalCompositeOperation = "screen"; g.globalAlpha = strength === 2 ? 0.32 : 0.16;
+    const n = 18, R = 1600; g.fillStyle = "#fff6d0";
+    for (let i = 0; i < n; i++) {
+      const a0 = (i / n) * Math.PI * 2, a1 = a0 + Math.PI / n;
+      g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a0) * R, cy + Math.sin(a0) * R); g.lineTo(cx + Math.cos(a1) * R, cy + Math.sin(a1) * R); g.closePath(); g.fill();
+    }
+    g.restore();
+  }
+  function drawVignette(g, amt) {
+    if (!amt) return;
+    const v = g.createRadialGradient(W / 2, H / 2, H * 0.32, W / 2, H / 2, W * 0.72);
+    v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, `rgba(0,0,0,${amt / 100})`);
+    g.fillStyle = v; g.fillRect(0, 0, W, H);
+  }
+  function silhouette(img, w, h, color) {
+    const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d");
+    g.drawImage(img, 0, 0, w, h); g.globalCompositeOperation = "source-in"; g.fillStyle = color; g.fillRect(0, 0, w, h); return c;
+  }
+  function drawCharacter(g) {
+    if (!state.char) return;
+    const img = state.char, iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+    const h = H * (val("cscale") / 100), w = iw * (h / ih);
+    const x = (val("cx") / 100) * W - w / 2, y = (val("cy") / 100) * H - h / 2;
+    const ow = val("outline"), glow = val("glow"), color = val("outlineColor");
+    g.save();
+    if (val("flip")) { g.translate(W, 0); g.scale(-1, 1); }
+    const fx = val("flip") ? W - x - w : x;
+    if (glow) { const s = silhouette(img, w, h, color); g.save(); g.shadowColor = color; g.shadowBlur = glow; g.globalAlpha = 0.9; g.drawImage(s, fx, y); g.drawImage(s, fx, y); g.restore(); }
+    if (ow) { const s = silhouette(img, w, h, color); for (let a = 0; a < 24; a++) { const t = (a / 24) * Math.PI * 2; g.drawImage(s, fx + Math.cos(t) * ow, y + Math.sin(t) * ow); } }
+    g.drawImage(img, fx, y, w, h);
+    g.restore();
+  }
+  function textLayout() {
+    const lines = [val("line1"), val("line2")].map((s) => s.trim().toUpperCase()).filter(Boolean);
+    const size = val("tsize"), pos = val("tpos");
+    let x = W * 0.06, y = H * 0.2, align = "left";
+    if (pos === "right") { x = W * 0.94; align = "right"; }
+    if (pos === "top") { x = W / 2; y = H * 0.16; align = "center"; }
+    if (pos === "bottom") { x = W / 2; y = H * 0.9 - (lines.length - 1) * size * 0.95; align = "center"; }
+    return { lines, size, x, y, align };
+  }
+  function drawText(g) {
+    const { lines, size, x, y, align } = textLayout(); if (!lines.length) return;
+    g.save(); g.translate(x, y); g.rotate(val("trot") * Math.PI / 180);
+    g.font = `${size}px "${val("font")}", Impact, sans-serif`; g.textAlign = align; g.textBaseline = "middle"; g.lineJoin = "round"; g.miterLimit = 2;
+    lines.forEach((line, i) => {
+      const ly = i * size * 0.95;
+      g.save(); g.shadowColor = "rgba(0,0,0,.55)"; g.shadowBlur = 18; g.shadowOffsetY = 10;
+      if (val("tstroke")) { g.lineWidth = val("tstroke") * 2; g.strokeStyle = val("tstrokeColor"); g.strokeText(line, 0, ly); }
+      g.restore();
+      g.fillStyle = val("tfill"); g.fillText(line, 0, ly);
+    });
+    g.restore();
+  }
+  function drawArrow(g) {
+    if (!val("arrowOn")) return;
+    g.save(); g.translate(val("ax") / 100 * W, val("ay") / 100 * H); g.rotate(val("arot") * Math.PI / 180);
+    g.beginPath(); g.moveTo(-170, -26); g.lineTo(40, -26); g.lineTo(40, -70); g.lineTo(150, 0); g.lineTo(40, 70); g.lineTo(40, 26); g.lineTo(-170, 26); g.closePath();
+    g.lineJoin = "round"; g.lineWidth = 16; g.strokeStyle = "#ffffff"; g.shadowColor = "rgba(0,0,0,.5)"; g.shadowBlur = 16; g.stroke();
+    g.shadowBlur = 0; g.fillStyle = "#ff2a2a"; g.fill(); g.restore();
+  }
+  function drawCircle(g) {
+    if (!val("circleOn")) return;
+    const x = val("ox") / 100 * W, y = val("oy") / 100 * H;
+    g.save(); g.lineWidth = 22; g.strokeStyle = "#ffffff"; g.beginPath(); g.ellipse(x, y, 130, 105, -0.15, 0, Math.PI * 2); g.stroke();
+    g.lineWidth = 12; g.strokeStyle = "#ff2a2a"; g.stroke(); g.restore();
+  }
+  function compose(g, forExport) {
+    g.clearRect(0, 0, W, H);
+    g.drawImage(processBackground(), 0, 0);
+    drawRays(g, (val("cx") / 100) * W, (val("cy") / 100) * H * 0.8, +val("rays"));
+    drawVignette(g, val("vignette"));
+    drawCircle(g);
+    drawCharacter(g);
+    drawArrow(g);
+    drawText(g);
+    if (!forExport && val("safe")) {
+      g.save(); g.fillStyle = "rgba(0,0,0,.82)"; const bw = 120, bh = 50; g.beginPath(); g.roundRect ? g.roundRect(W - bw - 16, H - bh - 16, bw, bh, 8) : g.rect(W - bw - 16, H - bh - 16, bw, bh); g.fill();
+      g.fillStyle = "#fff"; g.font = "600 30px Inter, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("12:48", W - bw / 2 - 16, H - bh / 2 - 16); g.restore();
+    }
+  }
+  function render() {
+    if (!state.bg) return;
+    compose(mctx, false);
+    ["mobile", "tiny"].forEach((id) => { const c = $(id), g = c.getContext("2d"); g.imageSmoothingQuality = "high"; g.clearRect(0, 0, c.width, c.height); g.drawImage(main, 0, 0, c.width, c.height); });
+    updateTips(); updateReply();
+  }
+
+  /* ---------- readability tips ---------- */
+  function updateTips() {
+    const words = [val("line1"), val("line2")].join(" ").trim().split(/\s+/).filter(Boolean).length;
+    $("wordCount").textContent = words ? `${words} word${words === 1 ? "" : "s"}` : "no text";
+    const tips = [];
+    tips.push([words <= 4, words <= 4 ? "Text is 4 words or fewer" : "Cut the text to 4 words or fewer"]);
+    tips.push([!words || val("tsize") >= 110, "Words still readable in the phone feed"]);
+    tips.push([!words || val("tstroke") >= 8, val("tstroke") >= 8 || !words ? "Text has a thick outline" : "Give the text a thicker outline"]);
+    tips.push([!!state.char || state.preset === "shader", state.char ? "Character is in the shot" : "Add the avatar or skin, it carries the thumbnail"]);
+    const { lines, size, x, y, align } = textLayout();
+    const textBottomRight = lines.length && (align === "right" || align === "center") && y + (lines.length - 1) * size > H * 0.72;
+    tips.push([!textBottomRight, textBottomRight ? "Move text away from the bottom right, the video length covers it" : "Nothing important under the video length badge"]);
+    $("tipList").innerHTML = tips.map(([ok, t]) => `<li class="${ok ? "ok" : "bad"}">${t}</li>`).join("");
+  }
+
+  /* ---------- reply message ---------- */
+  function updateReply() {
+    const name = $("rName").value.trim() || "there", title = $("rTitle").value.trim(), one = $("pOne").value, pack = $("pPack").value, days = $("rDays").value;
+    const forVid = title ? ` for "${title}"` : "";
+    const msg =
+`Hey ${name},
+
+Here's the thumbnail I mentioned${forVid}. I put your current one next to it so you can compare. Feel free to use it, it's yours.
+
+If you want more like this, I do thumbnails for $${one} each, or $${pack} a month for 8 (two a week), delivered within ${days} of you sending the video. I also cut Shorts from your videos if you want to try that.
+
+Want me to do the next one?
+
+${"Samuel"}`;
+    if (!$("reply").dataset.edited) $("reply").value = msg;
+  }
+
+  /* ---------- export ---------- */
+  function showOut(url, caption) {
+    const out = $("out"); const fig = document.createElement("figure");
+    const img = new Image(); img.src = url; img.alt = caption; const cap = document.createElement("figcaption"); cap.textContent = caption;
+    fig.append(img, cap); out.prepend(fig);
+    while (out.children.length > 4) out.lastChild.remove();
+  }
+  function exportThumb() {
+    const c = document.createElement("canvas"); c.width = W; c.height = H; compose(c.getContext("2d"), true);
+    showOut(c.toDataURL("image/jpeg", 0.92), "Thumbnail, 1280 × 720. Right click or press and hold to save.");
+  }
+  function exportBeforeAfter() {
+    const cw = 1600, ch = 520, pad = 20, iw = (cw - pad * 3) / 2, ih = iw * 9 / 16;
+    const c = document.createElement("canvas"); c.width = cw; c.height = ch; const g = c.getContext("2d");
+    g.fillStyle = "#111318"; g.fillRect(0, 0, cw, ch);
+    const before = document.createElement("canvas"); before.width = W; before.height = H; coverDraw(before.getContext("2d"), state.bg, W, H);
+    const after = document.createElement("canvas"); after.width = W; after.height = H; compose(after.getContext("2d"), true);
+    const top = 70;
+    g.drawImage(before, pad, top, iw, ih); g.drawImage(after, pad * 2 + iw, top, iw, ih);
+    g.font = '40px "Luckiest Guy", Impact, sans-serif'; g.textBaseline = "middle";
+    g.fillStyle = "#9aa1b2"; g.fillText("BEFORE", pad, 38);
+    g.fillStyle = "#ffd21f"; g.fillText("AFTER", pad * 2 + iw, 38);
+    showOut(c.toDataURL("image/jpeg", 0.9), "Before and after, ready to send. Right click or press and hold to save.");
+  }
+
+  /* ---------- inputs ---------- */
+  let nextId = 1;
+  function loadFile(file, target) {
+    if (!file || !file.type.startsWith("image/")) return;
+    const r = new FileReader();
+    r.onload = () => { const img = new Image(); img.onload = () => { img.__id = nextId++; setImage(target, img); }; img.src = r.result; };
+    r.readAsDataURL(file);
+  }
+  function setImage(target, img) {
+    if (target === "bg") { state.bg = img; state.bgIsExample = false; processedKey = ""; $("srcNote").innerHTML = "<b>Your image.</b> Adjust the style on the right."; }
+    else { state.char = img; }
+    render();
+  }
+  function syncOutputs() { document.querySelectorAll("output[for]").forEach((o) => { o.textContent = $(o.htmlFor).value; }); }
+
+  $("bgFile").addEventListener("change", (e) => loadFile(e.target.files[0], "bg"));
+  $("charFile").addEventListener("change", (e) => loadFile(e.target.files[0], "char"));
+  $("bgExample").addEventListener("click", () => { const s = exampleScene(); s.__id = nextId++; state.bg = s; state.bgIsExample = true; processedKey = ""; $("srcNote").innerHTML = "<b>Example scene.</b> Drop, paste or upload a screenshot to start a real one."; render(); });
+  $("charExample").addEventListener("click", () => { state.char = exampleAvatar(); render(); });
+  $("charNone").addEventListener("click", () => { state.char = null; render(); });
+  ["dragover", "dragenter"].forEach((ev) => main.addEventListener(ev, (e) => e.preventDefault()));
+  main.addEventListener("drop", (e) => { e.preventDefault(); loadFile(e.dataTransfer.files[0], "bg"); });
+  document.addEventListener("paste", (e) => {
+    const item = [...(e.clipboardData?.items || [])].find((i) => i.type.startsWith("image/"));
+    if (item) loadFile(item.getAsFile(), "bg");
+  });
+  ids.forEach((id) => { const el = $(id); el.addEventListener("input", () => { syncOutputs(); render(); }); });
+  ["rName", "rTitle", "pOne", "pPack", "rDays"].forEach((id) => $(id).addEventListener("input", () => { delete $("reply").dataset.edited; updateReply(); }));
+  $("reply").addEventListener("input", () => { $("reply").dataset.edited = "1"; });
+  $("exportBtn").addEventListener("click", exportThumb);
+  $("baBtn").addEventListener("click", exportBeforeAfter);
+  $("copyBtn").addEventListener("click", () => {
+    const t = $("reply"); const done = (m) => { $("copyNote").textContent = m; };
+    try {
+      navigator.clipboard.writeText(t.value).then(() => done("Copied."), () => { t.select(); done("Selected. Press Ctrl+C or Copy."); });
+    } catch (_) { t.select(); done("Selected. Press Ctrl+C or Copy."); }
+  });
+  try {
+    const saved = JSON.parse(localStorage.getItem("forge-prices") || "{}");
+    ["pOne", "pPack", "rDays"].forEach((id) => { if (saved[id]) $(id).value = saved[id]; });
+    ["pOne", "pPack", "rDays"].forEach((id) => $(id).addEventListener("change", () => {
+      try { localStorage.setItem("forge-prices", JSON.stringify({ pOne: $("pOne").value, pPack: $("pPack").value, rDays: $("rDays").value })); } catch (_) {}
+    }));
+  } catch (_) {}
+
+  /* ---------- start ---------- */
+  buildPresets();
+  const scene = exampleScene(); scene.__id = nextId++; state.bg = scene; state.char = exampleAvatar();
+  applyPreset("roblox");
+  const fonts = ["Luckiest Guy", "Lilita One", "Bangers", "Anton"].map((f) => document.fonts ? document.fonts.load(`80px "${f}"`) : Promise.resolve());
+  Promise.allSettled(fonts).then(render);
+})();
+</script>

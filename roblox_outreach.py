@@ -45,6 +45,7 @@ MAX_SUBS = int(os.getenv("YT_MAX_SUBS", "10000") or 10000)
 MC_SHARE = float(os.getenv("MINECRAFT_SHARE", "0.5") or 0.5)
 BOUNCE_LIMIT = float(os.getenv("ROBLOX_BOUNCE_LIMIT", "0.08") or 0.08)
 PAUSED = os.getenv("ROBLOX_OUTREACH_PAUSED", "").lower() in ("1", "true", "yes")
+FORGE_URL = os.getenv("FORGE_URL", "https://claude.ai/artifact/FAULCnxRfbjwF5EuuNBo9g")
 TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TG_CHAT = os.getenv("TELEGRAM_CHAT_ID", "")
 ARGS = sys.argv[1:]
@@ -441,6 +442,35 @@ def thread_status(svc, mailbox, lead):
     return "", ""
 
 
+def promised(lead):
+    """The sample the first email offered, so you deliver exactly that."""
+    body = lead.get("sent_body") or compose(lead)[1]
+    for line in body.split("\n"):
+        if re.search(r"on me|no charge|no strings|examples|samples", line):
+            return line.strip()
+    return ""
+
+
+def reply_alert(l, text, mailbox):
+    lines = [f"REPLY from [{niche_of(l).title()}] {l.get('channel') or l['email']} ({l['email']}):", "",
+             (text or "").strip()[:1500], ""]
+    p = promised(l)
+    if p:
+        lines += ["What you offered them:", p, ""]
+    vid = l.get("latest_video_id")
+    if vid:
+        lines += [f"Their latest video: {l.get('latest_title', '')}", f"https://www.youtube.com/watch?v={vid}",
+                  f"Current thumbnail (the BEFORE): https://i.ytimg.com/vi/{vid}/maxresdefault.jpg", ""]
+    elif l.get("url"):
+        lines += [f"Their page: {l['url']}", ""]
+    subs = l.get("subscribers")
+    if isinstance(subs, int):
+        lines.append(f"{subs:,} subscribers")
+    lines += [f"Make the sample in Thumbnail Forge: {FORGE_URL}",
+              f"Reply from {mailbox}, ideally within a few hours. No more automatic emails go to them."]
+    return "\n".join(lines)
+
+
 def sent_today(leads):
     today = now().date().isoformat()
     return sum(1 for l in leads if (l.get("sent_at") or "")[:10] == today) + \
@@ -525,8 +555,7 @@ def run():
     if not DRY:
         save_leads(leads)
     for l, text in report["replied"]:
-        telegram(f"REPLY from {l.get('channel') or l['email']} ({l['email']}):\n\n{(text or '').strip()[:1500]}\n\n"
-                 f"Answer it from your mailbox {mailbox}. No more automatic emails go to them.")
+        telegram(reply_alert(l, text, mailbox))
 
     # re-check saved leads with the current rules (older runs kept some article pages and invalid addresses)
     from roblox_scout import usable_email, ARTICLE, ARTICLE_TITLE, BIG_COMPANY, LINK_IN_BIO
@@ -578,7 +607,7 @@ def run():
         if follow:
             l.update(status="followed_up", followup_at=stamp)
         else:
-            l.update(status="sent", sent_at=stamp, sender=mailbox, sent_subject=subject,
+            l.update(status="sent", sent_at=stamp, sender=mailbox, sent_subject=subject, sent_body=body,
                      thread_id=res.get("thread_id"), message_id=res.get("message_id"))
         save_leads(leads)
         return True
@@ -721,6 +750,10 @@ def selftest():
     assert compose({"email": "a@b.com", "channel": "Home", "channel_id": "", "source": "web_studio"})[1].startswith("H")
     assert clean_name({"channel": "Lia (@liamakes) | Linktree"}) == "Lia"
     assert clean_name({"channel": "Contact Us", "channel_id": "www.bloxforge.com"}) == "Bloxforge"
+    a = reply_alert({"email": "p@gmail.com", "channel": "PixelPete", "source": "youtube_api", "subscribers": 240,
+                     "latest_title": "Brookhaven but I'm a Spy", "latest_video_id": "abc123", "niche": "roblox"},
+                    "yes please!", "me@x.com")
+    assert "i.ytimg.com/vi/abc123/maxresdefault.jpg" in a and "What you offered them" in a and FORGE_URL in a, a
     print(f"selftest passed: {len(bodies)} different openings and {len(subjects)} subject shapes in 300 emails")
 
 

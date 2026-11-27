@@ -507,6 +507,7 @@ def add_latest_video(lead):
         return
     first = items[0]["snippet"]
     lead["latest_title"] = first.get("title", "")
+    lead["latest_video_id"] = ids[0]
     lead["latest_views"] = stats.get(ids[0], 0)
     lead["avg_views"] = sum(stats.values()) // max(1, len(stats))
     lead["last_upload"] = lead.get("last_upload") or (items[0]["contentDetails"].get("videoPublishedAt") or "")[:10]
