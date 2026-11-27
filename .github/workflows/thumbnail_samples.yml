@@ -1,0 +1,48 @@
+name: Thumbnail samples
+
+# Paste a YouTube link, get 3 finished thumbnail samples (and before and afters) in your Telegram.
+# Made by Google's image model through GEMINI_API_KEY. Use it for portfolio pieces or for anyone who replied.
+on:
+  workflow_dispatch:
+    inputs:
+      video:
+        description: "YouTube link (video or Short)"
+        required: true
+      game:
+        description: "Which game"
+        type: choice
+        options: [roblox, minecraft]
+        default: roblox
+      title:
+        description: "Video title (optional, found automatically)"
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  make:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_IMAGE_MODEL: ${{ vars.GEMINI_IMAGE_MODEL }}
+      YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pillow
+      - name: Make the samples
+        run: python thumb_maker.py "${{ inputs.video }}" "${{ inputs.game }}" "${{ inputs.title }}"
+      - name: Keep the images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: thumbnail-samples-${{ github.run_id }}
+          path: thumb_samples/
+          retention-days: 30
+          if-no-files-found: ignore

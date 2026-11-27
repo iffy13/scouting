@@ -556,7 +556,13 @@ def run():
         save_leads(leads)
     for l, text in report["replied"]:
         telegram(reply_alert(l, text, mailbox))
-        if l.get("latest_title"):
+        if l.get("latest_video_id") and os.getenv("GEMINI_API_KEY") and not DRY:
+            try:  # finished samples, made by the image model, straight to Telegram
+                from thumb_maker import make_samples
+                make_samples(l["latest_video_id"], niche_of(l), l.get("latest_title", ""), l.get("channel", ""))
+            except Exception as e:
+                print(f"samples failed: {type(e).__name__}: {e}")
+        elif l.get("latest_title"):
             from thumb_brief import brief
             telegram(brief(l["latest_title"], niche_of(l), l["email"]))
 

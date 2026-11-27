@@ -74,7 +74,7 @@ def pick(title):
     return out[:3]
 
 
-def words_not_in_title(options, title, rng):
+def words_not_in_title(options, title, rng=None):
     tw = set(re.findall(r"\w+", (title or "").lower()))
     good = [o for o in options if not set(re.findall(r"\w+", o.lower())) <= tw]
     return (good + [o for o in options if o not in good])[:2]

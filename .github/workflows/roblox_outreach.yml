@@ -41,6 +41,8 @@ jobs:
       ACCOUNT_BOOKS_JSON: ${{ secrets.ACCOUNT_BOOKS_JSON }}
       SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
       YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_IMAGE_MODEL: ${{ vars.GEMINI_IMAGE_MODEL }}
       DB_PASSPHRASE: ${{ secrets.DB_PASSPHRASE }}
       ROBLOX_MAILBOX: ${{ vars.ROBLOX_MAILBOX }}
       YT_MAX_SUBS: ${{ vars.YT_MAX_SUBS || '10000' }}
