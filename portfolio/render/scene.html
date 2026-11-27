@@ -1,0 +1,255 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Lilita+One&family=Anton&family=Bangers&display=swap">
+<style>
+  html, body { margin: 0; background: #000; }
+  #frame { position: relative; width: 1280px; height: 720px; overflow: hidden; }
+  #gl { position: absolute; inset: 0; }
+  .t { position: absolute; line-height: .9; text-transform: uppercase; white-space: nowrap; }
+  .t span { display: block; position: relative; }
+  .t span::before { content: attr(data-t); position: absolute; left: 0; right: 0; top: 0; z-index: -1; color: transparent; text-align: inherit; }
+  .badge { position: absolute; right: 16px; bottom: 16px; background: rgba(0,0,0,.82); color: #fff; font: 600 30px Arial, sans-serif; padding: 6px 12px; border-radius: 8px; display: none; }
+</style>
+<script type="importmap">{"imports": {"three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<div id="frame"><canvas id="gl" width="1280" height="720"></canvas><div id="text"></div><div class="badge" id="badge">12:48</div></div>
+<script type="module">
+import * as THREE from "three";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { VignetteShader } from "three/addons/shaders/VignetteShader.js";
+
+const P = new URLSearchParams(location.search);
+const SCENE = P.get("scene") || "lava", AFTER = P.get("mode") !== "before";
+const W = 1280, H = 720;
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("gl"), antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(W, H, false); renderer.setPixelRatio(1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = AFTER ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping;
+renderer.toneMappingExposure = 0.95;
+renderer.shadowMap.enabled = AFTER; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(AFTER ? 32 : 55, W / H, 0.1, 500);
+
+/* ---------- helpers ---------- */
+const std = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: o.r ?? 0.55, metalness: o.m ?? 0, emissive: o.e ?? 0x000000, emissiveIntensity: o.ei ?? 1, map: o.map ?? null });
+function shadowed(m) { m.castShadow = true; m.receiveShadow = true; m.traverse?.(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } }); return m; }
+
+function faceTexture(kind, style) {
+  // style "smooth" = Roblox like cartoon face, "pixel" = 8x8 voxel face
+  const c = document.createElement("canvas");
+  if (style === "pixel") {
+    c.width = c.height = 8; const g = c.getContext("2d");
+    const skin = "#e8b48a", hair = "#d9a520";
+    g.fillStyle = skin; g.fillRect(0, 0, 8, 8); g.fillStyle = hair; g.fillRect(0, 0, 8, 2); g.fillRect(0, 2, 1, 1); g.fillRect(7, 2, 1, 1);
+    g.fillStyle = "#fff"; g.fillRect(1, 3, 2, 1); g.fillRect(5, 3, 2, 1);
+    g.fillStyle = kind === "angry" ? "#c0222a" : "#2b52c8"; g.fillRect(2, 3, 1, 1); g.fillRect(5, 3, 1, 1);
+    if (kind === "angry") { g.fillStyle = "#6b4a10"; g.fillRect(1, 2, 2, 1); g.fillRect(5, 2, 2, 1); }
+    g.fillStyle = "#7a3b2a"; if (kind === "shock") g.fillRect(3, 5, 2, 2); else g.fillRect(2, 6, 4, 1);
+    const t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.colorSpace = THREE.SRGBColorSpace; return t;
+  }
+  c.width = c.height = 256; const g = c.getContext("2d");
+  g.fillStyle = "#f6cf3a"; g.fillRect(0, 0, 256, 256);
+  const eye = (x, sx, sy, look) => { g.fillStyle = "#fff"; g.beginPath(); g.ellipse(x, 104, sx, sy, 0, 0, 7); g.fill(); g.fillStyle = "#151515"; g.beginPath(); g.ellipse(x + look, 108, sx * .45, sy * .5, 0, 0, 7); g.fill(); g.fillStyle = "#fff"; g.beginPath(); g.arc(x + look - 5, 100, 5, 0, 7); g.fill(); };
+  g.lineCap = "round"; g.strokeStyle = "#2a1a0a"; g.lineWidth = 10;
+  if (kind === "shock") {
+    eye(86, 30, 36, 0); eye(170, 30, 36, 0);
+    g.beginPath(); g.moveTo(52, 52); g.lineTo(108, 40); g.moveTo(148, 40); g.lineTo(204, 52); g.stroke();
+    g.fillStyle = "#5a1414"; g.beginPath(); g.ellipse(128, 186, 30, 38, 0, 0, 7); g.fill(); g.fillStyle = "#ff7d8a"; g.beginPath(); g.ellipse(128, 204, 18, 12, 0, 0, 7); g.fill();
+  } else if (kind === "sly") {
+    eye(86, 30, 22, 10); eye(170, 30, 22, 10);
+    g.beginPath(); g.moveTo(52, 70); g.lineTo(110, 78); g.moveTo(146, 78); g.lineTo(204, 66); g.stroke();
+    g.lineWidth = 12; g.beginPath(); g.moveTo(80, 178); g.quadraticCurveTo(140, 214, 186, 168); g.stroke();
+  } else if (kind === "scared") {
+    eye(86, 28, 34, -8); eye(170, 28, 34, -8);
+    g.beginPath(); g.moveTo(56, 40); g.lineTo(108, 58); g.moveTo(148, 58); g.lineTo(200, 40); g.stroke();
+    g.fillStyle = "#5a1414"; g.beginPath(); g.moveTo(88, 196); g.quadraticCurveTo(128, 150, 168, 196); g.quadraticCurveTo(128, 222, 88, 196); g.fill();
+  } else {
+    eye(86, 28, 30, 0); eye(170, 28, 30, 0); g.lineWidth = 12; g.beginPath(); g.moveTo(84, 176); g.quadraticCurveTo(128, 212, 172, 176); g.stroke();
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+
+function avatar({ style = "smooth", face = "shock", shirt = 0x2f6bff, pants = 0x1c2433, skin = 0xf6cf3a, hair = null, pose = {} }) {
+  const g = new THREE.Group();
+  const box = (w, h, d, mat) => style === "smooth" ? new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 4, Math.min(w, h, d) * 0.12), mat) : new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  const skinM = std(skin, { r: style === "smooth" ? 0.35 : 0.8 });
+  const faceM = new THREE.MeshStandardMaterial({ map: faceTexture(face, style), roughness: style === "smooth" ? 0.35 : 0.8 });
+  const headMats = [skinM, skinM, hair ? std(hair) : skinM, skinM, faceM, hair ? std(hair) : skinM];
+  const head = style === "smooth" ? new THREE.Mesh(new RoundedBoxGeometry(1.15, 1.1, 1.1, 6, 0.28), headMats) : new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), headMats);
+  if (style === "pixel") head.material[4].map.repeat.set(1, 1);
+  head.position.y = style === "smooth" ? 3.35 : 3.15; if (style === "smooth") head.scale.setScalar(1.3); g.add(head);
+  if (hair && style === "smooth") { const hm = new THREE.Mesh(new RoundedBoxGeometry(1.25, 0.42, 1.2, 4, 0.16), std(hair, { r: .6 })); hm.position.set(0, 0.42, -0.05); head.add(hm); }
+  const torso = box(1.9, 2.0, 1.0, std(shirt, { r: .5 })); torso.position.y = 1.65; g.add(torso);
+  const limb = (x, y, mat, rot = 0, rz = 0) => { const p = new THREE.Group(); p.position.set(x, y, 0); const m = box(0.92, 2.0, 0.95, mat); m.position.y = -0.95; p.add(m); p.rotation.x = rot; p.rotation.z = rz; g.add(p); return p; };
+  const sleeve = std(shirt, { r: .5 });
+  limb(-1.42, 2.6, style === "smooth" ? skinM : sleeve, pose.la ?? 0, pose.laz ?? 0.15);
+  limb(1.42, 2.6, style === "smooth" ? skinM : sleeve, pose.ra ?? 0, pose.raz ?? -0.15);
+  limb(-0.48, 0.65, std(pants), pose.ll ?? 0, 0.02);
+  limb(0.48, 0.65, std(pants), pose.rl ?? 0, -0.02);
+  head.rotation.set(pose.hx ?? 0, pose.hy ?? 0, pose.hz ?? 0);
+  return shadowed(g);
+}
+
+function voxels(cells, size = 1) {
+  // cells: [x,y,z,color]
+  const geo = new THREE.BoxGeometry(size, size, size);
+  const mesh = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ roughness: 0.85 }), cells.length);
+  const m = new THREE.Matrix4(), c = new THREE.Color();
+  cells.forEach(([x, y, z, col], i) => { m.makeTranslation(x * size, y * size, z * size); mesh.setMatrixAt(i, m); mesh.setColorAt(i, c.set(col)); });
+  mesh.castShadow = mesh.receiveShadow = true; return mesh;
+}
+const noise = (x, z) => Math.sin(x * 0.31) * 1.6 + Math.cos(z * 0.27) * 1.4 + Math.sin((x + z) * 0.13) * 2.2;
+function skyGradient(top, bottom) {
+  const c = document.createElement("canvas"); c.width = 2; c.height = 256; const g = c.getContext("2d");
+  const gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, top); gr.addColorStop(1, bottom); g.fillStyle = gr; g.fillRect(0, 0, 2, 256);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function lavaTexture() {
+  const c = document.createElement("canvas"); c.width = c.height = 512; const g = c.getContext("2d");
+  g.fillStyle = "#b31d00"; g.fillRect(0, 0, 512, 512);
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 900; i++) { const x = rnd() * 512, y = rnd() * 512, r = 6 + rnd() * 34; const gr = g.createRadialGradient(x, y, 0, x, y, r); const hot = rnd() > 0.55; gr.addColorStop(0, hot ? "rgba(255,236,120,.95)" : "rgba(255,120,0,.8)"); gr.addColorStop(1, "rgba(255,80,0,0)"); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
+  for (let i = 0; i < 140; i++) { g.fillStyle = "rgba(40,6,0,.55)"; const x = rnd() * 512, y = rnd() * 512; g.beginPath(); g.ellipse(x, y, 10 + rnd() * 26, 4 + rnd() * 10, rnd() * 3, 0, 7); g.fill(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(24, 24); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function embers(n, center, spread, color) {
+  const m = std(color, { e: color, ei: 4 }); let seed = 3; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < n; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.12), m); b.position.set(center.x + (rnd() - .5) * spread, center.y + rnd() * spread * .6, center.z + (rnd() - .5) * spread); b.rotation.set(rnd() * 3, rnd() * 3, 0); scene.add(b); }
+}
+function rim(color, intensity, pos, target) { const l = new THREE.SpotLight(color, intensity, 60, 0.6, 0.6, 1.2); l.position.copy(pos); l.target.position.copy(target); scene.add(l, l.target); return l; }
+function key(color, intensity, pos) { const l = new THREE.DirectionalLight(color, intensity); l.position.copy(pos); if (AFTER) { l.castShadow = true; l.shadow.mapSize.set(2048, 2048); const s = l.shadow.camera; s.left = -30; s.right = 30; s.top = 30; s.bottom = -30; s.far = 120; l.shadow.bias = -0.0005; } scene.add(l); return l; }
+
+/* ---------- text (after: pro, before: plain) ---------- */
+function textBlock(lines, o) {
+  const el = document.createElement("div"); el.className = "t"; Object.assign(el.style, o.pos);
+  el.style.fontFamily = `"${o.font}", Impact, sans-serif`; el.style.fontSize = o.size + "px"; el.style.transform = `rotate(${o.rot || 0}deg)`; el.style.textAlign = o.align || "left";
+  lines.forEach(line => {
+    const s = document.createElement("span"); s.textContent = line; s.dataset.t = line;
+    s.style.background = o.fill; s.style.webkitBackgroundClip = "text"; s.style.backgroundClip = "text"; s.style.color = "transparent";
+    el.appendChild(s);
+  });
+  const css = document.createElement("style");
+  const ex = Array.from({ length: o.depth || 8 }, (_, i) => `${0}px ${i + 1}px 0 ${o.extrude}`).join(",");
+  css.textContent = `.t span::before { -webkit-text-stroke: ${o.stroke}px ${o.strokeColor}; text-shadow: ${ex}, 0 ${(o.depth || 8) + 6}px 22px rgba(0,0,0,.55)${o.glow ? `, 0 0 40px ${o.glow}` : ""}; }`;
+  document.head.appendChild(css);
+  document.getElementById("text").appendChild(el);
+}
+function plainText(lines, pos, size = 46) {
+  const el = document.createElement("div"); Object.assign(el.style, { position: "absolute", color: "#fff", font: `${size}px Arial, sans-serif`, ...pos }); el.textContent = lines.join(" "); document.getElementById("text").appendChild(el);
+}
+
+/* ---------- scenes ---------- */
+let bloom = { s: 0.9, r: 0.6, t: 0.82 }, vignette = 1.15;
+const S = {
+  lava() {
+    scene.background = skyGradient("#1e8fff", "#8fd8ff"); scene.fog = new THREE.Fog(0xff9a50, 45, 160);
+    scene.add(new THREE.HemisphereLight(0xcfefff, 0xff7a2a, AFTER ? 0.9 : 1.6));
+    key(0xfff2dd, AFTER ? 2.2 : 1.2, new THREE.Vector3(-12, 24, 16));
+    const lt = lavaTexture(); const lava = new THREE.Mesh(new THREE.PlaneGeometry(400, 400, 1, 1), new THREE.MeshStandardMaterial({ map: lt, emissiveMap: lt, emissive: 0xffffff, emissiveIntensity: AFTER ? 1.1 : 0.6, roughness: 0.4 }));
+    lava.rotation.x = -Math.PI / 2; lava.position.y = -6; scene.add(lava);
+    const cells = []; const cols = ["#ff3d6e", "#36d1ff", "#ffd23a", "#7cff5b", "#b35cff"];
+    for (let i = 0; i < 26; i++) { const x = -18 + (i % 9) * 5 + (i * 7 % 3), z = -10 - Math.floor(i / 9) * 14 + (i * 13 % 5); for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) cells.push([x + a, -1 + (i % 4) * 0.6, z + b, cols[i % 5]]); }
+    scene.add(voxels(cells, 1.4));
+    const plat = new THREE.Mesh(new RoundedBoxGeometry(2.2, 0.8, 2.2, 3, 0.12), std(0x36d1ff, { r: .35 })); plat.position.set(3.2, -0.4, 4); scene.add(shadowed(plat));
+    const av = avatar({ style: "smooth", face: "shock", shirt: 0xff3d6e, pants: 0x1c2433, hair: 0x2a1a10, pose: { la: -0.3, laz: 2.5, ra: -0.2, raz: -2.3, ll: 0.45, rl: -0.35, hz: 0.06 } });
+    av.position.set(3.2, 0, 4); av.rotation.set(0, 0.42, 0.07); scene.add(av);
+    if (AFTER) { rim(0xff7a00, 40, new THREE.Vector3(5, -1, -3), av.position); rim(0x5ae0ff, 45, new THREE.Vector3(-4, 8, -6), av.position); embers(60, new THREE.Vector3(2, -4, 2), 14, 0xffc040); }
+    camera.position.set(AFTER ? 6.8 : 2, AFTER ? 2.0 : 8, AFTER ? 14 : 26); camera.lookAt(AFTER ? new THREE.Vector3(1.0, 1.9, 2) : new THREE.Vector3(0, 0, -4));
+    if (AFTER) textBlock(["DON'T", "FALL"], { pos: { left: "54px", top: "48px" }, font: "Luckiest Guy", size: 170, rot: -5, fill: "linear-gradient(#fff36a, #ffb000)", stroke: 18, strokeColor: "#14134a", extrude: "#14134a", depth: 10 });
+    else plainText(["can i beat the hardest obby"], { left: "30px", top: "30px" });
+    bloom = { s: 0.55, r: 0.5, t: 0.92 };
+  },
+  hardcore() {
+    scene.background = skyGradient("#07050f", "#7a1418"); scene.fog = new THREE.FogExp2(0x2a0a10, AFTER ? 0.016 : 0.006);
+    scene.add(new THREE.HemisphereLight(0x8a7ac0, 0x200808, AFTER ? 1.1 : 1.4));
+    key(0xffb0a0, AFTER ? 1.6 : 0.8, new THREE.Vector3(14, 16, 20));
+    const moon = new THREE.Mesh(new THREE.SphereGeometry(9, 32, 16), new THREE.MeshBasicMaterial({ color: AFTER ? 0xff3a2a : 0xaa2222, fog: false })); moon.position.set(-38, 30, -80); scene.add(moon);
+    const cells = [];
+    for (let x = -40; x < 40; x++) for (let z = -50; z < 14; z++) { const h = Math.round(noise(x, z)); cells.push([x, h, z, h > 1 ? "#3d6b2e" : "#2f5a24"]); cells.push([x, h - 1, z, "#4d3624"]); }
+    scene.add(voxels(cells));
+    const tree = (tx, tz) => { const h = Math.round(noise(tx, tz)); const c = []; for (let y = 1; y < 6; y++) c.push([tx, h + y, tz, "#4a3220"]); for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) for (let y = 5; y < 8; y++) if (Math.abs(a) + Math.abs(b) < 4) c.push([tx + a, h + y, tz + b, "#1f4a1c"]); scene.add(voxels(c)); };
+    [[-22, -20], [16, -26], [-8, -34], [26, -14], [-30, -6]].forEach(([a, b]) => tree(a, b));
+    const mob = new THREE.Group(); const dark = std(0x0b0b10, { r: .9 });
+    const mb = (w, h, d, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), dark); m.position.set(x, y, z); mob.add(m); };
+    mb(5, 7, 3, 0, 9, 0); mb(4, 4, 4, 0, 14.5, 0); mb(1.8, 9, 1.8, -3.6, 8, 0); mb(1.8, 9, 1.8, 3.6, 8, 0); mb(2, 6, 2, -1.3, 3, 0); mb(2, 6, 2, 1.3, 3, 0);
+    const eyeM = std(0xff1010, { e: 0xff0000, ei: AFTER ? 6 : 1 }); [-0.9, 0.9].forEach(x => { const e = new THREE.Mesh(new THREE.BoxGeometry(1, 0.45, 0.2), eyeM); e.position.set(x, 14.8, 2.05); mob.add(e); });
+    mob.position.set(-19, Math.round(noise(-19, -30)) - 2, -30); mob.scale.setScalar(1.2); mob.rotation.y = 0.3; scene.add(shadowed(mob));
+    const hero = avatar({ style: "pixel", face: "angry", shirt: 0xb3202a, pants: 0x2a2f4a, skin: 0xe8b48a, pose: { ra: -1.2, raz: -0.2, la: 0.3, hy: -0.25 } });
+    const sw = new THREE.Group(); const blade = new THREE.Mesh(new THREE.BoxGeometry(0.35, 3.2, 0.2), std(0x7fe9ff, { e: 0x3fd8ff, ei: AFTER ? 1.6 : 0.2, m: .4, r: .3 })); blade.position.y = 1.9; const hilt = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.3, 0.3), std(0x3a2a18)); sw.add(blade, hilt); sw.position.set(1.42, 0.2, 1.4); sw.rotation.x = -1.3; hero.add(sw);
+    hero.position.set(4.5, Math.round(noise(4, 6)) + 0.5, 6); hero.scale.setScalar(1.25); hero.rotation.y = 0.15; scene.add(hero);
+    if (AFTER) { rim(0xff2a2a, 160, new THREE.Vector3(9, 9, -2), hero.position); const fill = new THREE.PointLight(0x7fe9ff, 25, 10); fill.position.set(7, 6, 10); scene.add(fill); }
+    camera.position.set(AFTER ? 13 : 0, AFTER ? 5.5 : 14, AFTER ? 25 : 34); camera.lookAt(AFTER ? new THREE.Vector3(-3, 10.5, -8) : new THREE.Vector3(0, 2, -10));
+    if (AFTER) textBlock(["DAY", "100"], { pos: { left: "60px", top: "60px" }, font: "Anton", size: 210, rot: 0, fill: "linear-gradient(#ffffff, #ffd0d0)", stroke: 14, strokeColor: "#000", extrude: "#3a0006", depth: 10, glow: "rgba(255,30,30,.6)" });
+    else plainText(["100 days hardcore minecraft"], { left: "30px", top: "30px" });
+    bloom = { s: 0.9, r: 0.6, t: 0.82 }; vignette = 1.5;
+  },
+  secret() {
+    scene.background = new THREE.Color(0x0b0820); scene.fog = new THREE.Fog(0x0b0820, 18, 60);
+    scene.add(new THREE.HemisphereLight(0x9d8cff, 0x201040, AFTER ? 1.3 : 1.6));
+    key(0xd8ccff, AFTER ? 1.6 : 1.2, new THREE.Vector3(12, 12, 16));
+    const cells = []; for (let x = -16; x < 16; x++) for (let y = -1; y < 12; y++) cells.push([x, y, -10, (x + y) % 2 ? "#2a2440" : "#241f38"]);
+    for (let x = -16; x < 16; x++) for (let z = -10; z < 10; z++) cells.push([x, -2, z, (x + z) % 2 ? "#1a1630" : "#16122a"]);
+        scene.add(voxels(cells));
+    const door = new THREE.Mesh(new THREE.PlaneGeometry(5, 8), std(0x39ff8a, { e: 0x39ff8a, ei: AFTER ? 1.2 : 0.8 })); door.position.set(-4, 3, -9.45); scene.add(door);
+    const frame = voxels([...Array(10)].flatMap((_, i) => [[-7, -1 + i, -9.2, "#b35cff"], [-1, -1 + i, -9.2, "#b35cff"]]).concat([...Array(7)].map((_, i) => [-7 + i, 8, -9.2, "#b35cff"])));
+    scene.add(frame);
+    const glow = new THREE.PointLight(0x39ff8a, AFTER ? 60 : 15, 30); glow.position.set(-4, 3, -6); scene.add(glow);
+    const av = avatar({ style: "smooth", face: "sly", shirt: 0x8a2be2, pants: 0x14141c, hair: 0x101010, pose: { la: 0.1, laz: 0.2, ra: -0.5, raz: -0.25, hy: 0.2, hz: 0.16 } });
+    av.position.set(4.6, -1.5, 3.6); av.scale.setScalar(1.15); av.rotation.y = 0.3; scene.add(av);
+    if (AFTER) { rim(0x39ff8a, 90, new THREE.Vector3(-1, 6, 1), av.position); const f = new THREE.PointLight(0xffd0ff, 20, 12); f.position.set(9, 6, 10); scene.add(f); }
+    camera.position.set(AFTER ? 9 : 2, AFTER ? 3.6 : 6, AFTER ? 17 : 24); camera.lookAt(AFTER ? new THREE.Vector3(0.2, 2.8, -3) : new THREE.Vector3(0, 2, -6));
+    if (AFTER) textBlock(["SECRET", "BASE?"], { pos: { left: "52px", top: "54px" }, font: "Lilita One", size: 150, rot: -4, fill: "linear-gradient(#b8ffcf, #39ff8a)", stroke: 14, strokeColor: "#140a2e", extrude: "#140a2e", depth: 9, glow: "rgba(57,255,138,.45)" });
+    else plainText(["i found a secret base in brookhaven"], { left: "30px", top: "30px" });
+    bloom = { s: 0.6, r: 0.5, t: 0.9 }; vignette = 1.4;
+  },
+  server() {
+    scene.background = skyGradient("#2f7dff", "#ffc98a"); scene.fog = new THREE.Fog(0xffd2a0, 50, 160);
+    scene.add(new THREE.HemisphereLight(0xffe0b0, 0x5a3a7a, AFTER ? 0.9 : 1.6));
+    key(0xffc27a, AFTER ? 2.6 : 1.2, new THREE.Vector3(20, 24, 30));
+    const island = (cx, cy, cz, r, castle) => {
+      const c = [];
+      for (let x = -r; x <= r; x++) for (let z = -r; z <= r; z++) { const d = Math.hypot(x, z); if (d > r) continue; const depth = Math.round((r - d) * 1.1) + 1; c.push([cx + x, cy, cz + z, "#5fbf3a"]); for (let y = 1; y < depth; y++) c.push([cx + x, cy - y, cz + z, y < 2 ? "#7a5233" : "#6b6b6b"]); }
+      if (castle) { for (let y = 1; y < 9; y++) for (const [x, z] of [[-3, -3], [3, -3], [-3, 3], [3, 3]]) c.push([cx + x, cy + y, cz + z, "#f2ead6"]); for (let x = -3; x <= 3; x++) for (let z = -3; z <= 3; z++) if (Math.abs(x) === 3 || Math.abs(z) === 3) for (let y = 1; y < 6; y++) c.push([cx + x, cy + y, cz + z, y % 2 ? "#e6dcc4" : "#d8ccb0"]); for (const [x, z] of [[-3, -3], [3, -3], [-3, 3], [3, 3]]) for (let y = 9; y < 11; y++) c.push([cx + x, cy + y, cz + z, "#c0392b"]);
+        for (let x = -3; x <= 3; x += 2) c.push([cx + x, cy + 6, cz + 3, "#cfc6b0"], [cx + x, cy + 6, cz - 3, "#cfc6b0"]);
+        for (const x of [-1, 1]) for (let y = 2; y < 4; y++) c.push([cx + x, cy + y, cz + 3.01, "#2b2b3a"]);
+        for (let y = 1; y < 4; y++) c.push([cx, cy + y, cz + 3.02, "#5a3a1a"]);
+        for (let y = 11; y < 14; y++) c.push([cx + 3, cy + y, cz + 3, "#7a5233"]); c.push([cx + 4, cy + 13, cz + 3, "#ffd24a"], [cx + 5, cy + 13, cz + 3, "#ffd24a"], [cx + 4, cy + 12, cz + 3, "#ffd24a"]); }
+      scene.add(voxels(c));
+    };
+    island(0, 0, -6, 9, true); island(-26, 6, -30, 6, false); island(24, -2, -26, 7, false); island(-12, -8, -50, 5, false); island(16, 10, -60, 6, false);
+    const gold = std(0xffd24a, { e: 0xffb000, ei: AFTER ? 1.4 : 0.2, m: .6, r: .3 });
+    [[-14, 9, -4], [-11, 4, 2], [8, 12, -12], [12, 5, -2], [-7, 13, -14]].forEach(([x, y, z], i) => { const g = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.9, 0.9), gold); g.position.set(x, y, z); g.rotation.set(i, i * 0.7, 0); scene.add(g); });
+    if (AFTER) { rim(0x7fd8ff, 60, new THREE.Vector3(-10, 14, -22), new THREE.Vector3(0, 4, -6)); }
+    if (AFTER) { const sun = new THREE.Mesh(new THREE.SphereGeometry(6, 24, 16), std(0xfff1b0, { e: 0xffe08a, ei: 3 })); sun.position.set(-40, 18, -110); scene.add(sun); }
+    camera.position.set(AFTER ? 16 : 0, AFTER ? 6 : 20, AFTER ? 20 : 44); camera.lookAt(AFTER ? new THREE.Vector3(-3, 5, -8) : new THREE.Vector3(0, 0, -20));
+    if (AFTER) {
+      textBlock(["NEW", "SEASON"], { pos: { right: "60px", top: "70px" }, align: "right", font: "Luckiest Guy", size: 150, rot: 3, fill: "linear-gradient(#fff6c8, #ffc21a)", stroke: 16, strokeColor: "#3a1a00", extrude: "#3a1a00", depth: 10 });
+      const sub = document.createElement("div"); Object.assign(sub.style, { position: "absolute", right: "64px", top: "372px", font: "40px 'Lilita One', sans-serif", color: "#fff", letterSpacing: "2px", textShadow: "0 3px 0 #3a1a00, 0 0 18px rgba(0,0,0,.4)", transform: "rotate(3deg)" }); sub.textContent = "SKYBLOCK  •  JOIN TODAY"; document.getElementById("text").appendChild(sub);
+    } else plainText(["our minecraft server new season"], { left: "30px", top: "30px" });
+    bloom = { s: 0.5, r: 0.5, t: 0.92 };
+  },
+};
+S[SCENE]();
+
+/* ---------- render ---------- */
+await document.fonts.ready;
+let composer = null;
+if (AFTER) {
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  composer.addPass(new UnrealBloomPass(new THREE.Vector2(W, H), bloom.s, bloom.r, bloom.t));
+  const v = new ShaderPass(VignetteShader); v.uniforms.offset.value = 0.95; v.uniforms.darkness.value = Math.min(vignette, 1.0); composer.addPass(v);
+  composer.addPass(new OutputPass());
+  composer.render();
+} else {
+  renderer.render(scene, camera);
+}
+document.getElementById("badge").style.display = P.get("badge") ? "block" : "none";
+window.READY = true;
+</script>
+</body></html>
