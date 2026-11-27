@@ -1,0 +1,384 @@
+{
+ "work": [
+  {
+   "src": "work/01-roblox-whos-faster.jpg",
+   "game": "roblox",
+   "title": "Who's faster?",
+   "format": "VS duel",
+   "video": false
+  },
+  {
+   "src": "work/02-minecraft-day-100-one-heart.jpg",
+   "game": "minecraft",
+   "title": "Day 100, one heart left",
+   "format": "Game UI story",
+   "video": false
+  },
+  {
+   "src": "work/03-roblox-escape-in-59.jpg",
+   "game": "roblox",
+   "title": "Escape in 00:59",
+   "format": "Countdown",
+   "video": false
+  },
+  {
+   "src": "work/04-minecraft-max-armor.jpg",
+   "game": "minecraft",
+   "title": "Max armor",
+   "format": "Showcase",
+   "video": false
+  },
+  {
+   "src": "work/05-roblox-dont-fall.jpg",
+   "game": "roblox",
+   "title": "Don't fall",
+   "format": "Obby challenge",
+   "video": false
+  },
+  {
+   "src": "work/06-minecraft-day-100.jpg",
+   "game": "minecraft",
+   "title": "Day 100",
+   "format": "Hardcore",
+   "video": false
+  },
+  {
+   "src": "work/07-roblox-secret-base.jpg",
+   "game": "roblox",
+   "title": "Secret base?",
+   "format": "Story",
+   "video": false
+  },
+  {
+   "src": "work/08-minecraft-server-new-season.jpg",
+   "game": "minecraft",
+   "title": "New season",
+   "format": "Server key art",
+   "video": false
+  },
+  {
+   "src": "work/09-minecraft-netherite-showcase.mp4",
+   "game": "minecraft",
+   "title": "Netherite showcase",
+   "format": "Animation",
+   "video": true
+  },
+  {
+   "src": "work/10-roblox-dance-loop.mp4",
+   "game": "roblox",
+   "title": "Dance loop",
+   "format": "Animation",
+   "video": true
+  },
+  {
+   "src": "work/19-roblox-who-s-richer.jpg",
+   "game": "roblox",
+   "title": "Who's Richer?",
+   "format": "VS duel",
+   "video": false
+  },
+  {
+   "src": "work/20-roblox-noob-vs-pro.jpg",
+   "game": "roblox",
+   "title": "Noob Vs Pro",
+   "format": "VS duel",
+   "video": false
+  },
+  {
+   "src": "work/21-roblox-who-s-braver.jpg",
+   "game": "roblox",
+   "title": "Who's Braver?",
+   "format": "VS duel",
+   "video": false
+  },
+  {
+   "src": "work/22-roblox-best-friends.jpg",
+   "game": "roblox",
+   "title": "Best Friends?",
+   "format": "VS duel",
+   "video": false
+  },
+  {
+   "src": "work/23-minecraft-who-survives.jpg",
+   "game": "minecraft",
+   "title": "Who Survives?",
+   "format": "VS duel",
+   "video": false
+  },
+  {
+   "src": "work/24-minecraft-best-builder.jpg",
+   "game": "minecraft",
+   "title": "Best Builder?",
+   "format": "VS duel",
+   "video": false
+  },
+  {
+   "src": "work/25-minecraft-who-s-stronger.jpg",
+   "game": "minecraft",
+   "title": "Who's Stronger?",
+   "format": "VS duel",
+   "video": false
+  },
+  {
+   "src": "work/26-minecraft-who-s-faster.jpg",
+   "game": "minecraft",
+   "title": "Who's Faster?",
+   "format": "VS duel",
+   "video": false
+  },
+  {
+   "src": "work/27-minecraft-nether-only.jpg",
+   "game": "minecraft",
+   "title": "Nether Only",
+   "format": "Game UI story",
+   "video": false
+  },
+  {
+   "src": "work/28-minecraft-frozen-world.jpg",
+   "game": "minecraft",
+   "title": "Frozen World",
+   "format": "Game UI story",
+   "video": false
+  },
+  {
+   "src": "work/29-minecraft-cave-only.jpg",
+   "game": "minecraft",
+   "title": "Cave Only",
+   "format": "Game UI story",
+   "video": false
+  },
+  {
+   "src": "work/30-minecraft-one-block.jpg",
+   "game": "minecraft",
+   "title": "One Block",
+   "format": "Game UI story",
+   "video": false
+  },
+  {
+   "src": "work/31-minecraft-hunted.jpg",
+   "game": "minecraft",
+   "title": "Hunted",
+   "format": "Game UI story",
+   "video": false
+  },
+  {
+   "src": "work/32-roblox-don-t-sleep.jpg",
+   "game": "roblox",
+   "title": "Don'T Sleep",
+   "format": "Game UI story",
+   "video": false
+  },
+  {
+   "src": "work/33-roblox-lost.jpg",
+   "game": "roblox",
+   "title": "Lost",
+   "format": "Game UI story",
+   "video": false
+  },
+  {
+   "src": "work/34-roblox-broke.jpg",
+   "game": "roblox",
+   "title": "Broke",
+   "format": "Game UI story",
+   "video": false
+  },
+  {
+   "src": "work/35-roblox-survive.jpg",
+   "game": "roblox",
+   "title": "Survive!",
+   "format": "Countdown",
+   "video": false
+  },
+  {
+   "src": "work/36-roblox-find-it.jpg",
+   "game": "roblox",
+   "title": "Find It!",
+   "format": "Countdown",
+   "video": false
+  },
+  {
+   "src": "work/37-roblox-run.jpg",
+   "game": "roblox",
+   "title": "Run!",
+   "format": "Countdown",
+   "video": false
+  },
+  {
+   "src": "work/38-roblox-get-rich.jpg",
+   "game": "roblox",
+   "title": "Get Rich",
+   "format": "Countdown",
+   "video": false
+  },
+  {
+   "src": "work/39-minecraft-beat-it.jpg",
+   "game": "minecraft",
+   "title": "Beat It",
+   "format": "Countdown",
+   "video": false
+  },
+  {
+   "src": "work/40-minecraft-no-jumping.jpg",
+   "game": "minecraft",
+   "title": "No Jumping",
+   "format": "Countdown",
+   "video": false
+  },
+  {
+   "src": "work/41-minecraft-speedrun.jpg",
+   "game": "minecraft",
+   "title": "Speedrun",
+   "format": "Countdown",
+   "video": false
+  },
+  {
+   "src": "work/42-roblox-hide.jpg",
+   "game": "roblox",
+   "title": "Hide!",
+   "format": "Countdown",
+   "video": false
+  },
+  {
+   "src": "work/43-minecraft-full-diamond.jpg",
+   "game": "minecraft",
+   "title": "Full Diamond",
+   "format": "Showcase",
+   "video": false
+  },
+  {
+   "src": "work/44-minecraft-gold-only.jpg",
+   "game": "minecraft",
+   "title": "Gold Only",
+   "format": "Showcase",
+   "video": false
+  },
+  {
+   "src": "work/45-minecraft-iron-man.jpg",
+   "game": "minecraft",
+   "title": "Iron Man?",
+   "format": "Showcase",
+   "video": false
+  },
+  {
+   "src": "work/46-minecraft-op-sword.jpg",
+   "game": "minecraft",
+   "title": "Op Sword",
+   "format": "Showcase",
+   "video": false
+  },
+  {
+   "src": "work/47-roblox-max-level.jpg",
+   "game": "roblox",
+   "title": "Max Level",
+   "format": "Showcase",
+   "video": false
+  },
+  {
+   "src": "work/48-roblox-rarest-item.jpg",
+   "game": "roblox",
+   "title": "Rarest Item",
+   "format": "Showcase",
+   "video": false
+  },
+  {
+   "src": "work/49-roblox-new-outfit.jpg",
+   "game": "roblox",
+   "title": "New Outfit",
+   "format": "Showcase",
+   "video": false
+  },
+  {
+   "src": "work/50-minecraft-nether-king.jpg",
+   "game": "minecraft",
+   "title": "Nether King",
+   "format": "Showcase",
+   "video": false
+  },
+  {
+   "src": "work/51-roblox-toxic-obby.jpg",
+   "game": "roblox",
+   "title": "Toxic Obby",
+   "format": "Danger moment",
+   "video": false
+  },
+  {
+   "src": "work/52-roblox-void-jump.jpg",
+   "game": "roblox",
+   "title": "Void Jump",
+   "format": "Danger moment",
+   "video": false
+  },
+  {
+   "src": "work/53-roblox-thin-ice.jpg",
+   "game": "roblox",
+   "title": "Thin Ice",
+   "format": "Danger moment",
+   "video": false
+  },
+  {
+   "src": "work/54-roblox-last-jump.jpg",
+   "game": "roblox",
+   "title": "Last Jump",
+   "format": "Danger moment",
+   "video": false
+  },
+  {
+   "src": "work/55-minecraft-floor-is-lava.jpg",
+   "game": "minecraft",
+   "title": "Floor Is Lava",
+   "format": "Danger moment",
+   "video": false
+  },
+  {
+   "src": "work/56-minecraft-1-block-left.jpg",
+   "game": "minecraft",
+   "title": "1 Block Left",
+   "format": "Danger moment",
+   "video": false
+  },
+  {
+   "src": "work/57-minecraft-the-end.jpg",
+   "game": "minecraft",
+   "title": "The End?",
+   "format": "Danger moment",
+   "video": false
+  },
+  {
+   "src": "work/58-minecraft-don-t-slip.jpg",
+   "game": "minecraft",
+   "title": "Don'T Slip",
+   "format": "Danger moment",
+   "video": false
+  }
+ ],
+ "beforeAfter": [
+  {
+   "src": "before-after/01-roblox-dont-fall.jpg",
+   "game": "roblox",
+   "title": "Same obby moment, redesigned to earn the click",
+   "format": "",
+   "video": false
+  },
+  {
+   "src": "before-after/02-minecraft-day-100.jpg",
+   "game": "minecraft",
+   "title": "Dim landscape becomes a blood moon standoff",
+   "format": "",
+   "video": false
+  },
+  {
+   "src": "before-after/03-roblox-secret-base.jpg",
+   "game": "roblox",
+   "title": "A dark room becomes a glowing secret",
+   "format": "",
+   "video": false
+  },
+  {
+   "src": "before-after/04-minecraft-server-new-season.jpg",
+   "game": "minecraft",
+   "title": "A plain server shot becomes key art for the listing",
+   "format": "",
+   "video": false
+  }
+ ]
+}
