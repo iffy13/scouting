@@ -1,0 +1,287 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Lilita+One&family=Anton&family=Bangers&family=Orbitron:wght@900&family=Rubik:ital,wght@1,900&display=swap">
+<style>html,body{margin:0;background:#000} canvas{display:block}</style>
+<script type="importmap">{"imports": {"three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<canvas id="out" width="1280" height="720"></canvas>
+<script type="module">
+import * as THREE from "three";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+
+const W = 1280, H = 720, P = new URLSearchParams(location.search), THUMB = P.get("t") || "vs";
+const out = document.getElementById("out"), ctx = out.getContext("2d");
+const glc = document.createElement("canvas"); glc.width = W; glc.height = H;
+const R = new THREE.WebGLRenderer({ canvas: glc, antialias: true, alpha: true, preserveDrawingBuffer: true });
+R.setPixelRatio(1); R.setSize(W, H, false); R.outputColorSpace = THREE.SRGBColorSpace;
+R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = 1.05; R.shadowMap.enabled = true;
+
+/* ================= textures ================= */
+let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+function canvasTex(w, h, paint, pixel) {
+  const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d"); paint(g, w, h);
+  if (pixel) { // per pixel shading noise, the look of a real skin file
+    const im = g.getImageData(0, 0, w, h), d = im.data;
+    for (let i = 0; i < d.length; i += 4) { if (!d[i + 3]) continue; const n = (rnd() - .5) * 26; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+    g.putImageData(im, 0, 0);
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  if (pixel) { t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; } else t.anisotropy = 4;
+  return t;
+}
+const rect = (g, col, x, y, w, h) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+const mat = (map, o = {}) => new THREE.MeshStandardMaterial({ map, roughness: o.r ?? 0.6, metalness: o.m ?? 0, color: o.c ?? 0xffffff });
+
+/* --- Minecraft style skin: 8 px per block side, detailed and shaded --- */
+function mcSkin(s) {
+  const face = canvasTex(8, 8, g => {
+    rect(g, s.skin, 0, 0, 8, 8); rect(g, s.hair, 0, 0, 8, 2); rect(g, s.hair, 0, 2, 1, 2); rect(g, s.hair, 7, 2, 1, 2); rect(g, s.hairDark, 2, 1, 3, 1);
+    if (s.face === "scared") {
+      rect(g, "#fff", 1, 3, 2, 2); rect(g, "#fff", 5, 3, 2, 2); rect(g, s.eye, 1, 4, 1, 1); rect(g, s.eye, 6, 4, 1, 1);
+      rect(g, "#3a1010", 3, 5, 2, 2); rect(g, "#ff8a8a", 3, 6, 2, 1); rect(g, s.skinDark, 1, 2, 2, 1); rect(g, s.skinDark, 5, 2, 2, 1);
+    } else if (s.face === "cool") {
+      rect(g, "#fff", 1, 4, 2, 1); rect(g, "#fff", 5, 4, 2, 1); rect(g, s.eye, 2, 4, 1, 1); rect(g, s.eye, 5, 4, 1, 1);
+      rect(g, s.hairDark, 1, 3, 2, 1); rect(g, s.hairDark, 5, 3, 2, 1); rect(g, "#7a3b2a", 3, 6, 3, 1); rect(g, "#7a3b2a", 5, 5, 1, 1);
+    } else { rect(g, "#fff", 1, 4, 2, 1); rect(g, "#fff", 5, 4, 2, 1); rect(g, s.eye, 2, 4, 1, 1); rect(g, s.eye, 5, 4, 1, 1); rect(g, "#7a3b2a", 3, 6, 2, 1); }
+  }, true);
+  const hairSide = canvasTex(8, 8, g => { rect(g, s.skin, 0, 0, 8, 8); rect(g, s.hair, 0, 0, 8, 4); rect(g, s.hair, 0, 4, 3, 2); rect(g, s.hairDark, 4, 1, 3, 1); }, true);
+  const hairTop = canvasTex(8, 8, g => { rect(g, s.hair, 0, 0, 8, 8); rect(g, s.hairDark, 2, 2, 4, 1); rect(g, s.hairDark, 1, 5, 3, 1); }, true);
+  const hairBack = canvasTex(8, 8, g => { rect(g, s.hair, 0, 0, 8, 7); rect(g, s.hairDark, 1, 3, 6, 1); rect(g, s.skin, 0, 7, 8, 1); }, true);
+  const chin = canvasTex(8, 8, g => rect(g, s.skin, 0, 0, 8, 8), true);
+  const shirtF = canvasTex(8, 12, g => { rect(g, s.shirt, 0, 0, 8, 12); rect(g, s.shirt2, 0, 0, 8, 2); rect(g, s.trim, 3, 2, 2, 9); rect(g, s.shirt2, 1, 7, 2, 2); rect(g, s.shirt2, 5, 7, 2, 2); rect(g, s.belt, 0, 11, 8, 1); }, true);
+  const shirtB = canvasTex(8, 12, g => { rect(g, s.shirt, 0, 0, 8, 12); rect(g, s.shirt2, 0, 0, 8, 3); rect(g, s.belt, 0, 11, 8, 1); }, true);
+  const arm = canvasTex(4, 12, g => { rect(g, s.shirt, 0, 0, 4, 7); rect(g, s.shirt2, 0, 6, 4, 1); rect(g, s.skin, 0, 7, 4, 5); rect(g, s.skinDark, 0, 11, 4, 1); }, true);
+  const leg = canvasTex(4, 12, g => { rect(g, s.pants, 0, 0, 4, 9); rect(g, s.pants2, 1, 3, 1, 4); rect(g, s.shoe, 0, 9, 4, 3); rect(g, s.shoe2, 0, 11, 4, 1); }, true);
+  return { face, hairSide, hairTop, hairBack, chin, shirtF, shirtB, arm, leg };
+}
+function mcCharacter(s, pose = {}) {
+  const t = mcSkin(s), g = new THREE.Group(), U = 0.125; // 1 skin pixel
+  const head = new THREE.Mesh(new THREE.BoxGeometry(8 * U, 8 * U, 8 * U), [mat(t.hairSide), mat(t.hairSide), mat(t.hairTop), mat(t.chin), mat(t.face), mat(t.hairBack)]);
+  head.position.y = 24 * U + 4 * U; g.add(head);
+  const hat = new THREE.Mesh(new THREE.BoxGeometry(8.6 * U, 3 * U, 8.6 * U), mat(t.hairTop)); hat.position.y = 3 * U; head.add(hat);
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(8 * U, 12 * U, 4 * U), [mat(t.shirtB), mat(t.shirtB), mat(t.shirtB), mat(t.shirtB), mat(t.shirtF), mat(t.shirtB)]);
+  torso.position.y = 18 * U; g.add(torso);
+  const limb = (x, y, tex, rx, rz) => { const p = new THREE.Group(); p.position.set(x, y, 0); const m = new THREE.Mesh(new THREE.BoxGeometry(4 * U, 12 * U, 4 * U), mat(tex)); m.position.y = -5 * U; p.add(m); p.rotation.set(rx || 0, 0, rz || 0); g.add(p); return p; };
+  limb(-6 * U, 23 * U, t.arm, pose.la, pose.laz); limb(6 * U, 23 * U, t.arm, pose.ra, pose.raz);
+  limb(-2 * U, 12 * U, t.leg, pose.ll, 0.02); limb(2 * U, 12 * U, t.leg, pose.rl, -0.02);
+  head.rotation.set(pose.hx || 0, pose.hy || 0, pose.hz || 0);
+  if (s.armor) { // plated armor overlay
+    const plate = mat(canvasTex(8, 12, gg => { rect(gg, s.armor, 0, 0, 8, 12); rect(gg, s.armor2, 0, 0, 8, 1); rect(gg, s.armorTrim, 3, 1, 2, 10); rect(gg, s.armorTrim, 0, 5, 8, 1); rect(gg, s.armor2, 1, 8, 2, 3); rect(gg, s.armor2, 5, 8, 2, 3); }, true), { m: 0.55, r: 0.35 });
+    const ch = new THREE.Mesh(new THREE.BoxGeometry(8.8 * U, 12.6 * U, 4.8 * U), plate); ch.position.y = 18 * U; g.add(ch);
+    const helm = new THREE.Mesh(new THREE.BoxGeometry(9 * U, 4 * U, 9 * U), plate); helm.position.y = 3.2 * U; head.add(helm);
+  }
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  return g;
+}
+
+/* --- Roblox style avatar: smooth parts, real clothing textures, layered hair --- */
+function rbFace(kind) {
+  return canvasTex(256, 256, g => {
+    rect(g, "#e8c39e", 0, 0, 256, 256); g.lineCap = "round"; g.strokeStyle = "#1a1210"; g.fillStyle = "#1a1210";
+    const brow = (x1, y1, x2, y2) => { g.lineWidth = 11; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); };
+    if (kind === "angry") {
+      brow(58, 86, 112, 104); brow(144, 104, 198, 86); g.beginPath(); g.ellipse(92, 124, 13, 16, 0, 0, 7); g.ellipse(166, 124, 13, 16, 0, 0, 7); g.fill();
+      g.fillStyle = "#fff"; g.strokeStyle = "#1a1210"; g.lineWidth = 7; g.beginPath(); g.roundRect(82, 166, 96, 34, 10); g.fill(); g.stroke(); g.beginPath(); g.moveTo(82, 183); g.lineTo(178, 183); g.stroke();
+    } else if (kind === "smug") {
+      brow(64, 98, 114, 92); brow(144, 86, 196, 96); g.beginPath(); g.ellipse(92, 124, 16, 9, 0, 0, 7); g.ellipse(166, 124, 16, 9, 0, 0, 7); g.fill();
+      g.fillStyle = "#fff"; g.lineWidth = 7; g.beginPath(); g.moveTo(84, 168); g.quadraticCurveTo(130, 218, 184, 160); g.lineTo(84, 168); g.fill(); g.stroke();
+    } else if (kind === "panic") {
+      brow(62, 78, 112, 66); brow(146, 66, 196, 78);
+      g.fillStyle = "#fff"; g.beginPath(); g.ellipse(92, 118, 24, 28, 0, 0, 7); g.ellipse(166, 118, 24, 28, 0, 0, 7); g.fill(); g.lineWidth = 6; g.stroke();
+      g.fillStyle = "#1a1210"; g.beginPath(); g.arc(92, 122, 9, 0, 7); g.arc(166, 122, 9, 0, 7); g.fill();
+      g.fillStyle = "#4a0f0f"; g.beginPath(); g.ellipse(130, 188, 26, 30, 0, 0, 7); g.fill(); g.fillStyle = "#ff8a8a"; g.beginPath(); g.ellipse(130, 204, 15, 9, 0, 0, 7); g.fill();
+    }
+  });
+}
+const plaid = (a, b, c) => canvasTex(256, 256, g => { rect(g, a, 0, 0, 256, 256); g.globalAlpha = .55; for (let i = 0; i < 256; i += 48) { rect(g, b, i, 0, 18, 256); rect(g, b, 0, i, 256, 18); } g.globalAlpha = .7; for (let i = 24; i < 256; i += 48) { rect(g, c, i, 0, 4, 256); rect(g, c, 0, i, 256, 4); } });
+const jacket = (a, b) => canvasTex(256, 256, g => { rect(g, a, 0, 0, 256, 256); rect(g, b, 96, 0, 64, 256); g.strokeStyle = "rgba(0,0,0,.35)"; g.lineWidth = 4; g.beginPath(); g.moveTo(92, 0); g.lineTo(92, 256); g.moveTo(164, 0); g.lineTo(164, 256); g.stroke(); rect(g, "rgba(255,255,255,.12)", 20, 140, 50, 40); rect(g, "rgba(255,255,255,.12)", 186, 140, 50, 40); });
+const denim = c => canvasTex(256, 256, g => { rect(g, c, 0, 0, 256, 256); g.globalAlpha = .12; for (let i = 0; i < 900; i++) rect(g, rnd() > .5 ? "#fff" : "#000", rnd() * 256, rnd() * 256, 2, 6); g.globalAlpha = 1; g.strokeStyle = "rgba(255,220,150,.5)"; g.lineWidth = 3; g.setLineDash([8, 6]); g.beginPath(); g.moveTo(128, 0); g.lineTo(128, 256); g.stroke(); });
+function rbAvatar(s, pose = {}) {
+  const g = new THREE.Group(), skin = new THREE.MeshStandardMaterial({ color: 0xe8c39e, roughness: .45 });
+  const rb = (w, h, d, m, r = .14) => new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 5, Math.min(w, h, d) * r), m);
+  const faceM = mat(rbFace(s.face), { r: .45 });
+  const head = rb(1.3, 1.25, 1.25, [skin, skin, skin, skin, faceM, skin], .22); head.position.y = 3.35; g.add(head);
+  const hm = new THREE.MeshStandardMaterial({ color: s.hair, roughness: .7 });
+  const hairBits = s.long ? [[0, .55, -.05, 1.45, .45, 1.4], [-.62, -.05, -.1, .32, 1.4, 1.3], [.62, -.05, -.1, .32, 1.4, 1.3], [0, -.2, -.62, 1.45, 1.3, .35]]
+    : [[0, .55, -.05, 1.45, .5, 1.42], [-.35, .72, .35, .55, .35, .6], [.3, .75, .4, .5, .35, .55], [0, .4, .66, 1.38, .25, .2], [-.6, .25, 0, .3, .7, 1.2], [.6, .25, 0, .3, .7, 1.2]];
+  hairBits.forEach(([x, y, z, w, h, d], i) => { const b = rb(w, h, d, hm, .25); b.position.set(x, y, z); b.rotation.z = (i % 2 ? 1 : -1) * 0.06; head.add(b); });
+  const shirtM = mat(s.shirtTex, { r: .7 }), pantsM = mat(s.pantsTex, { r: .8 });
+  const torso = rb(2.0, 2.0, 1.0, shirtM, .1); torso.position.y = 1.7; g.add(torso);
+  const limb = (x, y, m, rx, rz, lower) => { const p = new THREE.Group(); p.position.set(x, y, 0); const a = rb(.95, 1.3, .98, m, .12); a.position.y = -.6; p.add(a); const b = rb(.92, .8, .96, lower, .2); b.position.y = -1.5; p.add(b); p.rotation.set(rx || 0, 0, rz || 0); g.add(p); return p; };
+  limb(-1.47, 2.6, shirtM, pose.la, pose.laz ?? .12, skin); limb(1.47, 2.6, shirtM, pose.ra, pose.raz ?? -.12, skin);
+  limb(-.5, .7, pantsM, pose.ll, .02, new THREE.MeshStandardMaterial({ color: 0x222222, roughness: .5 })); limb(.5, .7, pantsM, pose.rl, -.02, new THREE.MeshStandardMaterial({ color: 0x222222, roughness: .5 }));
+  head.rotation.set(pose.hx || 0, pose.hy || 0, pose.hz || 0);
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  return g;
+}
+
+/* ================= 3D passes ================= */
+function lights(scene, key = 0xffffff, rimA = 0x66ccff, rimB = 0xffaa66, k = 2.4) {
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.1));
+  const d = new THREE.DirectionalLight(key, k); d.position.set(4, 8, 10); d.castShadow = true; scene.add(d);
+  const a = new THREE.DirectionalLight(rimA, 2.2); a.position.set(-8, 5, -6); scene.add(a);
+  const b = new THREE.DirectionalLight(rimB, 1.8); b.position.set(8, 3, -6); scene.add(b);
+}
+function renderPass(scene, camera) {
+  R.setClearColor(0x000000, 0); R.render(scene, camera);
+  const c = document.createElement("canvas"); c.width = W; c.height = H; c.getContext("2d").drawImage(glc, 0, 0); return c;
+}
+function characterLayer(build, cam, opt = {}) {
+  const scene = new THREE.Scene(); lights(scene, opt.key, opt.rimA, opt.rimB, opt.k);
+  const obj = build(); scene.add(obj);
+  const camera = new THREE.PerspectiveCamera(cam.fov || 30, W / H, .1, 200); camera.position.set(...cam.pos); camera.lookAt(...cam.look);
+  return renderPass(scene, camera);
+}
+function voxelWorld(opt) {
+  const scene = new THREE.Scene(); scene.background = null;
+  scene.fog = new THREE.Fog(opt.fog, opt.fogNear || 25, opt.fogFar || 90);
+  scene.add(new THREE.HemisphereLight(opt.sky, opt.ground, opt.amb ?? 1.2));
+  const d = new THREE.DirectionalLight(opt.sun, opt.sunI ?? 2.4); d.position.set(-10, 20, 10); scene.add(d);
+  const geo = new THREE.BoxGeometry(1, 1, 1), cells = [];
+  const nz = (x, z) => Math.sin(x * .3) * 1.7 + Math.cos(z * .25) * 1.5 + Math.sin((x + z) * .12) * 2.4;
+  for (let x = -45; x < 45; x++) for (let z = -60; z < 12; z++) { const h = Math.round(nz(x, z)); cells.push([x, h, z, opt.top(h, x, z)]); cells.push([x, h - 1, z, opt.dirt]); }
+  [[-20, -18], [14, -24], [-6, -30], [24, -12], [-30, -8], [6, -40], [-14, -44]].forEach(([tx, tz]) => { const h = Math.round(nz(tx, tz)); for (let y = 1; y < 6; y++) cells.push([tx, h + y, tz, "#5a3a22"]); for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) for (let y = 5; y < 8; y++) if (Math.abs(a) + Math.abs(b) < 4) cells.push([tx + a, h + y, tz + b, opt.leaf]); });
+  const mesh = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ roughness: .9 }), cells.length);
+  const m4 = new THREE.Matrix4(), c = new THREE.Color();
+  cells.forEach(([x, y, z, col], i) => { m4.makeTranslation(x, y, z); mesh.setMatrixAt(i, m4); mesh.setColorAt(i, c.set(col).offsetHSL(0, 0, (rnd() - .5) * .05)); });
+  scene.add(mesh); if (opt.extra) opt.extra(scene);
+  const camera = new THREE.PerspectiveCamera(50, W / H, .1, 300); camera.position.set(...opt.cam); camera.lookAt(...opt.look);
+  return renderPass(scene, camera);
+}
+
+/* ================= 2D compositing helpers ================= */
+function outlined(src, r = 10, color = "#fff", shadow = true) {
+  const sil = document.createElement("canvas"); sil.width = W; sil.height = H; const s = sil.getContext("2d");
+  s.drawImage(src, 0, 0); s.globalCompositeOperation = "source-in"; s.fillStyle = color; s.fillRect(0, 0, W, H);
+  const o = document.createElement("canvas"); o.width = W; o.height = H; const g = o.getContext("2d");
+  if (shadow) { g.save(); g.shadowColor = "rgba(0,0,0,.45)"; g.shadowBlur = 24; g.shadowOffsetY = 10; g.drawImage(sil, 0, 0); g.restore(); }
+  for (let a = 0; a < 32; a++) { const t = a / 32 * Math.PI * 2; g.drawImage(sil, Math.cos(t) * r, Math.sin(t) * r); }
+  g.drawImage(src, 0, 0); return o;
+}
+function grade(src, { blur = 0, sat = 1.2, bright = 1, contrast = 1.1, tint = null } = {}) {
+  const c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
+  g.filter = `blur(${blur}px) saturate(${sat}) brightness(${bright}) contrast(${contrast})`; g.drawImage(src, -blur * 2, -blur * 2, W + blur * 4, H + blur * 4); g.filter = "none";
+  if (tint) { g.globalCompositeOperation = "soft-light"; g.fillStyle = tint; g.fillRect(0, 0, W, H); g.globalCompositeOperation = "source-over"; }
+  return c;
+}
+function burst(cx, cy, a, b, n = 22) {
+  ctx.fillStyle = a; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = b; for (let i = 0; i < n; i++) { const t0 = i / n * Math.PI * 2, t1 = t0 + Math.PI / n; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(t0) * 2000, cy + Math.sin(t0) * 2000); ctx.lineTo(cx + Math.cos(t1) * 2000, cy + Math.sin(t1) * 2000); ctx.fill(); }
+}
+function vignette(amount = .55, color = "0,0,0") { const v = ctx.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, W * .75); v.addColorStop(0, `rgba(${color},0)`); v.addColorStop(1, `rgba(${color},${amount})`); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H); }
+function text(str, x, y, o) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate((o.rot || 0) * Math.PI / 180); if (o.skew) ctx.transform(1, 0, -o.skew, 1, 0, 0);
+  ctx.font = `${o.weight || ""} ${o.size}px "${o.font}", Impact, sans-serif`; ctx.textAlign = o.align || "left"; ctx.textBaseline = "alphabetic"; ctx.lineJoin = "round";
+  const m = ctx.measureText(str), x0 = o.align === "center" ? -m.width / 2 : (o.align === "right" ? -m.width : 0);
+  ctx.save(); ctx.shadowColor = "rgba(0,0,0,.6)"; ctx.shadowBlur = 0; ctx.shadowOffsetY = o.drop ?? 12; ctx.lineWidth = (o.strokes?.[0]?.[0] || 0) * 2; ctx.strokeStyle = o.strokes?.[0]?.[1] || "#000"; ctx.strokeText(str, 0, 0); ctx.restore();
+  (o.strokes || []).forEach(([w, c]) => { ctx.lineWidth = w * 2; ctx.strokeStyle = c; ctx.strokeText(str, 0, 0); });
+  let fill = o.fill; if (Array.isArray(fill)) { const gr = ctx.createLinearGradient(0, -o.size * .8, 0, 0); fill.forEach((c, i) => gr.addColorStop(i / (fill.length - 1), c)); fill = gr; }
+  ctx.fillStyle = fill; ctx.fillText(str, 0, 0); ctx.restore(); return m.width;
+}
+function label(str, x, y, o) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate((o.rot || 0) * Math.PI / 180);
+  ctx.font = `${o.size}px "${o.font}", sans-serif`; const w = ctx.measureText(str).width + o.padX * 2, h = o.size * 1.25;
+  ctx.fillStyle = "rgba(0,0,0,.45)"; ctx.beginPath(); ctx.roundRect(-w / 2 + 6, -h / 2 + 8, w, h, o.r ?? 10); ctx.fill();
+  ctx.fillStyle = o.bg; ctx.lineWidth = o.border ?? 7; ctx.strokeStyle = o.borderColor || "#000"; ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, o.r ?? 10); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = o.color; ctx.textAlign = "center"; ctx.textBaseline = "middle"; if (o.stroke) { ctx.lineWidth = o.stroke * 2; ctx.strokeStyle = o.strokeColor; ctx.lineJoin = "round"; ctx.strokeText(str, 0, 3); } ctx.fillText(str, 0, 3); ctx.restore();
+}
+function pixelIcon(rows, x, y, px, colors) { rows.forEach((r, j) => [...r].forEach((ch, i) => { if (colors[ch]) { ctx.fillStyle = colors[ch]; ctx.fillRect(x + i * px, y + j * px, px, px); } })); }
+const SKULL = [" kkkkkk ", "kwwwwwwk", "kwwwwwwk", "kwkkwkkk", "kwkkwkkk", "kwwkkwwk", " kwwwwk ", " kwkwkk ", "  kkkk  "];
+const HEART = [" kk kk ", "krrkrrk", "krrrrrk", "krrrrrk", " krrrk ", "  krk  ", "   k   "];
+const HEART_E = [" kk kk ", "kggkggk", "kgggggk", "kgggggk", " kgggk ", "  kgk  ", "   k   "];
+function skull(x, y, px = 7, rot = 0) { ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.shadowColor = "rgba(0,0,0,.5)"; ctx.shadowBlur = 10; pixelIcon(SKULL, -4 * px, -4 * px, px, { k: "#111", w: "#fafafa" }); ctx.restore(); }
+function sweat(x, y, s = 1, rot = 0) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s, s);
+  ctx.beginPath(); ctx.moveTo(0, -38); ctx.bezierCurveTo(22, -8, 26, 14, 0, 26); ctx.bezierCurveTo(-26, 14, -22, -8, 0, -38); ctx.fillStyle = "#4fc3ff"; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = "#0a2a6a"; ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(-7, 4, 5, 9, -.3, 0, 7); ctx.fillStyle = "#e6f7ff"; ctx.fill(); ctx.restore();
+}
+function swirl(x, y, r = 34) { ctx.save(); ctx.translate(x, y); ctx.lineWidth = 7; ctx.strokeStyle = "#111"; ctx.beginPath(); for (let t = 0; t < 14; t += .1) { const rr = r * (1 - t / 15); ctx.lineTo(Math.cos(t * 1.4) * rr * 1.4, Math.sin(t * 1.4) * rr * .5 - t * 4); } ctx.stroke(); ctx.restore(); }
+function curvedArrow(x1, y1, cx, cy, x2, y2, col = "#ff2020") {
+  const draw = (w, c) => { ctx.lineWidth = w; ctx.strokeStyle = c; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.quadraticCurveTo(cx, cy, x2, y2); ctx.stroke(); };
+  const ang = Math.atan2(y2 - cy, x2 - cx);
+  const head = (sz, c) => { ctx.save(); ctx.translate(x2, y2); ctx.rotate(ang); ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(sz, 0); ctx.lineTo(-sz * .9, -sz * .9); ctx.lineTo(-sz * .9, sz * .9); ctx.closePath(); ctx.fill(); ctx.restore(); };
+  ctx.save(); ctx.shadowColor = "rgba(0,0,0,.5)"; ctx.shadowBlur = 14; draw(38, "#000"); head(50, "#000"); ctx.restore();
+  draw(24, col); head(36, col);
+}
+function lightning(x, col = "#ffd21f") {
+  const pts = [[x + 40, -20], [x - 20, 200], [x + 30, 210], [x - 40, 420], [x + 20, 430], [x - 30, 740]];
+  ctx.save(); ctx.lineJoin = "miter"; [[56, "#111"], [34, col]].forEach(([w, c]) => { ctx.lineWidth = w; ctx.strokeStyle = c; ctx.beginPath(); pts.forEach(([a, b], i) => i ? ctx.lineTo(a, b) : ctx.moveTo(a, b)); ctx.stroke(); }); ctx.restore();
+}
+
+/* ================= the four thumbnails ================= */
+const T = {
+  async vs() {
+    // split background with rays, two outlined avatars, VS logo, boxed question, pill
+    ctx.save(); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(W / 2 + 40, 0); ctx.lineTo(W / 2 - 40, H); ctx.lineTo(0, H); ctx.clip(); burst(250, 360, "#1f5fff", "#3b7bff"); ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.moveTo(W / 2 + 40, 0); ctx.lineTo(W, 0); ctx.lineTo(W, H); ctx.lineTo(W / 2 - 40, H); ctx.clip(); burst(1030, 360, "#ff2a3a", "#ff4d5b"); ctx.restore();
+    vignette(.35);
+    const left = characterLayer(() => { const a = rbAvatar({ face: "angry", hair: 0x6b3a1a, shirtTex: jacket("#16161c", "#1f4fd0"), pantsTex: denim("#1d2a44") }, { ra: -.9, raz: .35, la: -.9, laz: -.35, hy: .15 }); a.rotation.y = .3; return a; },
+      { pos: [-0.3, 2.9, 8.5], look: [-0.3, 2.65, 0], fov: 30 }, { rimA: 0x66aaff, rimB: 0x66aaff });
+    const right = characterLayer(() => { const a = rbAvatar({ face: "smug", hair: 0xb0281a, long: true, shirtTex: denim("#3a6ad0"), pantsTex: denim("#7a1520") }, { ra: .1, raz: -.25, la: -2.5, laz: .5, hy: -.15, hz: -.08 }); a.rotation.y = -.3; return a; },
+      { pos: [0.3, 2.9, 8.5], look: [0.3, 2.65, 0], fov: 30 }, { rimA: 0xff6677, rimB: 0xff6677 });
+    ctx.drawImage(outlined(left, 11), -330, 90); ctx.drawImage(outlined(right, 11), 330, 90);
+    lightning(W / 2);
+    text("VS", W / 2, 470, { font: "Luckiest Guy", size: 230, align: "center", fill: ["#fff27a", "#ffb000", "#ff7a00"], strokes: [[22, "#111"]], rot: -6, drop: 16 });
+    label("WHO'S FASTER?", W / 2, 70, { font: "Luckiest Guy", size: 62, padX: 28, bg: "#fff", color: "#111", border: 8 });
+    label("1V1 OBBY RACE", W / 2 + 10, 560, { font: "Lilita One", size: 46, padX: 26, bg: "#8a3dff", color: "#fff", stroke: 4, strokeColor: "#111", r: 40, rot: -4, border: 7 });
+  },
+  async hardcore() {
+    const bg = voxelWorld({ fog: 0x2a0710, sky: 0x7a6aa0, ground: 0x200808, amb: .9, sun: 0xff7766, sunI: 1.6, dirt: "#3a2a1c", leaf: "#1e4a1c", top: h => h > 1 ? "#3f6e2c" : "#335f25", cam: [6, 7, 16], look: [-4, 4, -20],
+      extra: s => { const mob = new THREE.Group(), dk = new THREE.MeshStandardMaterial({ color: 0x0a0a10, roughness: .9 }); [[5, 7, 3, 0, 9, 0], [4, 4, 4, 0, 14.5, 0], [1.8, 9, 1.8, -3.6, 8, 0], [1.8, 9, 1.8, 3.6, 8, 0], [2, 6, 2, -1.3, 3, 0], [2, 6, 2, 1.3, 3, 0]].forEach(([w, h, d, x, y, z]) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), dk); m.position.set(x, y, z); mob.add(m); }); const em = new THREE.MeshBasicMaterial({ color: 0xff2020 }); [-.9, .9].forEach(x => { const e = new THREE.Mesh(new THREE.BoxGeometry(1, .5, .2), em); e.position.set(x, 14.8, 2.05); mob.add(e); }); mob.position.set(-10, 0, -22); mob.rotation.y = .4; s.add(mob); } });
+    const sky = ctx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, "#14060c"); sky.addColorStop(.6, "#6a1018"); sky.addColorStop(1, "#2a0a0e"); ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#ff3a2a"; ctx.shadowColor = "#ff2a1a"; ctx.shadowBlur = 80; ctx.beginPath(); ctx.arc(330, 230, 110, 0, 7); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.drawImage(grade(bg, { blur: 3, sat: 1.25, bright: .95, contrast: 1.15, tint: "#ff2a2a" }), 0, 0);
+    const hero = characterLayer(() => { const c = mcCharacter({ skin: "#e3a47a", skinDark: "#b97a55", hair: "#e8e8f0", hairDark: "#b8b8c8", eye: "#2ad24a", face: "scared", shirt: "#1f5fd0", shirt2: "#163f90", trim: "#e8e8f0", belt: "#111", pants: "#22242e", pants2: "#2e3140", shoe: "#3a7bff", shoe2: "#1f3f90" }, { ra: -.35, raz: -2.75, la: -.35, laz: 2.75, hx: .08 }); c.rotation.y = -.3; return c; },
+      { pos: [0.4, 2.85, 5.4], look: [0, 2.9, 0], fov: 38 }, { rimA: 0xff3333, rimB: 0x66ddff, k: 2.6 });
+    ctx.drawImage(outlined(hero, 10), 170, 50);
+    sweat(930, 190, 1.2, .3); sweat(985, 270, .8, .5); swirl(800, 110, 40);
+    // hearts bar: one heart left
+    for (let i = 0; i < 10; i++) pixelIcon(i === 0 ? HEART : HEART_E, 40 + i * 58, 650, 7, { k: "#111", r: "#ff2a2a", g: "#4a4a52" });
+    // top left box
+    ctx.save(); ctx.translate(40, 40); ctx.rotate(-.04); ctx.fillStyle = "rgba(0,0,0,.85)"; ctx.strokeStyle = "#ff2a2a"; ctx.lineWidth = 7; ctx.beginPath(); ctx.roundRect(0, 0, 360, 150, 14); ctx.fill(); ctx.stroke(); ctx.restore();
+    skull(110, 116, 9, -.04);
+    text("Hearts:", 175, 100, { font: "Lilita One", size: 50, fill: "#fff", strokes: [[4, "#000"]], drop: 4, rot: -2 });
+    text("1", 190, 172, { font: "Luckiest Guy", size: 80, fill: ["#ff7070", "#ff1a1a"], strokes: [[6, "#000"]], drop: 6, rot: -2 });
+    text("DAY 100", 1240, 610, { font: "Rubik", weight: 900, size: 120, align: "right", skew: .18, fill: ["#ffffff", "#ffe0e0"], strokes: [[16, "#000"]], rot: -4 });
+    text("HARDCORE", 1225, 690, { font: "Rubik", weight: 900, size: 64, align: "right", skew: .18, fill: ["#ff5a5a", "#c80000"], strokes: [[10, "#000"], [4, "#fff"]], rot: -4, drop: 8 });
+    vignette(.5);
+  },
+  async timer() {
+    // top down: avatar lying on a glowing green grid floor with scattered props, big timer
+    const g = ctx; const fl = g.createRadialGradient(560, 380, 60, 560, 380, 760); fl.addColorStop(0, "#3dff6a"); fl.addColorStop(1, "#06451a"); g.fillStyle = fl; g.fillRect(0, 0, W, H);
+    g.strokeStyle = "rgba(0,0,0,.18)"; g.lineWidth = 3; for (let x = -20; x < W; x += 64) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); } for (let y = 0; y < H; y += 64) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+    const props = characterLayer(() => {
+      const grp = new THREE.Group(); const cols = [0xff3dd0, 0x1d2a6a, 0xffd21f, 0x34c3ff, 0xff2a2a, 0x7a3dff, 0xffffff];
+      const spots = [[-9, 3], [-7.5, -2.5], [-10, -5], [8, 4.5], [9.5, -1], [6.5, -4.5], [-4.5, 5], [3.5, 5.5], [-3, -5.5], [10, 3]];
+      spots.forEach(([x, z], i) => { const b = new THREE.Mesh(new RoundedBoxGeometry(1.7, .8, 1.1, 3, .12), new THREE.MeshStandardMaterial({ color: cols[i % cols.length], roughness: .35 })); b.position.set(x, .4, z); b.rotation.set(rnd() * .6, rnd() * 3, rnd() * .6); grp.add(b); });
+      const coinM = new THREE.MeshStandardMaterial({ color: 0xffc21a, metalness: .8, roughness: .25, emissive: 0x553300 });
+      [[-6, 1], [5.5, 1.5], [7.5, -3], [-8, -1], [2, -5]].forEach(([x, z]) => { const c = new THREE.Mesh(new THREE.CylinderGeometry(.6, .6, .18, 32), coinM); c.position.set(x, .2, z); c.rotation.set(rnd(), 0, rnd()); grp.add(c); });
+      const av = rbAvatar({ face: "panic", hair: 0x141414, shirtTex: plaid("#f2efe6", "#2a6a3a", "#111"), pantsTex: denim("#22252e") }, { la: .2, laz: 1.2, ra: .1, raz: -1.0, ll: .2, rl: -.3, hz: .2 });
+      av.rotation.x = -Math.PI / 2; av.rotation.z = .5; av.position.set(-.5, .6, .5); grp.add(av); return grp;
+    }, { pos: [-1.2, 13.5, 2.6], look: [-1.2, 0, 0], fov: 42 }, { rimA: 0xaaffcc, rimB: 0xffffff, k: 2.8 });
+    ctx.drawImage(outlined(props, 6, "#fff"), 0, 0);
+    vignette(.55, "0,25,8");
+    text("TIME LEFT:", 1055, 92, { font: "Lilita One", size: 58, align: "center", fill: "#fff", strokes: [[7, "#000"]], drop: 6 });
+    ctx.save(); ctx.fillStyle = "rgba(10,10,10,.92)"; ctx.strokeStyle = "#000"; ctx.lineWidth = 8; ctx.beginPath(); ctx.roundRect(850, 115, 410, 150, 18); ctx.fill(); ctx.stroke(); ctx.restore();
+    ctx.save(); ctx.font = '900 104px "Orbitron", monospace'; ctx.textAlign = "center"; ctx.fillStyle = "#3a0606"; ctx.fillText("88:88", 1055, 228); ctx.shadowColor = "#ff1a1a"; ctx.shadowBlur = 30; ctx.fillStyle = "#ff2626"; ctx.fillText("00:59", 1055, 228); ctx.restore();
+    text("ESCAPE!", 60, 680, { font: "Luckiest Guy", size: 120, fill: ["#fff27a", "#ffb000"], strokes: [[16, "#111"]], rot: -4 });
+  },
+  async armor() {
+    burst(640, 330, "#ffb36b", "#ffcf96", 26);
+    const bg = voxelWorld({ fog: 0xffb089, sky: 0xffd0a0, ground: 0x6a4a6a, amb: 1.3, sun: 0xffc080, sunI: 2.2, dirt: "#6a4a2c", leaf: "#f4a6d0", top: h => h > 1 ? "#6fbf3f" : "#5fae36", cam: [0, 6, 14], look: [0, 2, -10] });
+    const sky = ctx.createLinearGradient(0, 0, 0, H * .6); sky.addColorStop(0, "rgba(120,90,220,.55)"); sky.addColorStop(1, "rgba(255,150,120,0)"); ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = .9; ctx.drawImage(grade(bg, { blur: 4, sat: 1.3, bright: 1.05 }), 0, 0); ctx.globalAlpha = 1;
+    burst(640, 330, "rgba(0,0,0,0)", "rgba(255,240,200,.18)", 26);
+    const hero = characterLayer(() => { const c = mcCharacter({ skin: "#d9a07a", skinDark: "#a87050", hair: "#2a2a30", hairDark: "#14141a", eye: "#9a3dff", face: "cool", shirt: "#3a2e3a", shirt2: "#241c24", trim: "#c8a030", belt: "#111", pants: "#3a3442", pants2: "#4a4454", shoe: "#5a5260", shoe2: "#2a2430", armor: "#4a4250", armor2: "#2e2834", armorTrim: "#e0b040" }, { ra: -1.6, raz: -.9, la: .5, laz: .7, rl: -.5, ll: .35, hy: .3, hz: -.1 }); c.rotation.set(0, .45, .12);
+      const sw = new THREE.Group(); const bl = new THREE.Mesh(new THREE.BoxGeometry(.18, 2.4, .1), new THREE.MeshStandardMaterial({ color: 0x9a3dff, emissive: 0x6a1dff, emissiveIntensity: .9, metalness: .6, roughness: .3 })); bl.position.y = 1.4; const hi = new THREE.Mesh(new THREE.BoxGeometry(.7, .16, .16), new THREE.MeshStandardMaterial({ color: 0x3a2a18 })); sw.add(bl, hi); sw.position.set(.75, 1.9, .55); sw.rotation.set(-1.0, 0, -.6); c.add(sw); return c; },
+      { pos: [0.3, 2.4, 7.4], look: [0, 2.2, 0], fov: 36 }, { rimA: 0xffd090, rimB: 0x9a7aff, k: 2.6 });
+    ctx.drawImage(outlined(hero, 11), 70, 10);
+    text("MAX ARMOR", 70, 220, { font: "Anton", size: 120, fill: "#ff2020", strokes: [[12, "#fff"], [5, "#000"]], rot: -16, drop: 8 });
+    curvedArrow(250, 300, 230, 560, 520, 520);
+  },
+};
+
+await document.fonts.ready; await Promise.all(['"Luckiest Guy"', '"Lilita One"', "Anton", '"Orbitron"', '900 italic 40px "Rubik"'].map(f => document.fonts.load(f.includes("px") ? f : `40px ${f}`)));
+await T[THUMB]();
+window.READY = true;
+</script></body></html>
