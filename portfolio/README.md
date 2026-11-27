@@ -36,3 +36,10 @@ node shoot.js lava,hardcore,secret,server   # writes out/<scene>_after.png and _
 ```
 Edit the scene functions in `scene.html` (camera, pose, colors, words) and run `shoot.js` again.
 Needs Playwright with Chromium (`npm install playwright && npx playwright install chromium` on your PC).
+
+## Set 3: 40 thumbnails and 10 animations (on the site)
+
+`render/thumb3.html` is a template engine: `specs.json` describes every piece (template, characters, colors,
+world, words) and `node run3.js [name regex]` renders them. Templates: VS duel, game UI story, countdown,
+showcase, danger moment. Animations: turntable, emotes (wave, dance, victory, panic), VS intro, countdown,
+title reveal; frames are joined into mp4 with ffmpeg. All 50 live in `site/work` with captions.

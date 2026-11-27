@@ -1,0 +1,1312 @@
+[
+ {
+  "name": "vs-0",
+  "game": "roblox",
+  "format": "VS duel",
+  "title": "Who's Richer?",
+  "spec": {
+   "tpl": "vs",
+   "seed": 20,
+   "left": {
+    "kind": "rb",
+    "look": "suit",
+    "face": "smug",
+    "pose": "cheer"
+   },
+   "right": {
+    "kind": "rb",
+    "look": "noob",
+    "face": "angry",
+    "pose": "angry"
+   },
+   "colors": [
+    [
+     "#a16207",
+     "#ca8a04"
+    ],
+    [
+     "#15803d",
+     "#22c55e"
+    ]
+   ],
+   "question": "WHO'S RICHER?",
+   "pill": "BILLIONAIRE TEST",
+   "pillColor": "#8a3dff"
+  }
+ },
+ {
+  "name": "vs-1",
+  "game": "roblox",
+  "format": "VS duel",
+  "title": "Noob Vs Pro",
+  "spec": {
+   "tpl": "vs",
+   "seed": 21,
+   "left": {
+    "kind": "rb",
+    "look": "noob",
+    "face": "panic",
+    "pose": "angry"
+   },
+   "right": {
+    "kind": "rb",
+    "look": "punk",
+    "face": "smug",
+    "pose": "cheer"
+   },
+   "colors": [
+    [
+     "#1f5fff",
+     "#3b7bff"
+    ],
+    [
+     "#7c3aed",
+     "#9d5cff"
+    ]
+   ],
+   "question": "NOOB VS PRO",
+   "pill": "WHO WINS?",
+   "pillColor": "#ff2a6a"
+  }
+ },
+ {
+  "name": "vs-2",
+  "game": "roblox",
+  "format": "VS duel",
+  "title": "Who's Braver?",
+  "spec": {
+   "tpl": "vs",
+   "seed": 22,
+   "left": {
+    "kind": "rb",
+    "look": "hoodie",
+    "face": "panic",
+    "pose": "angry"
+   },
+   "right": {
+    "kind": "rb",
+    "look": "blonde",
+    "face": "smug",
+    "pose": "cheer"
+   },
+   "colors": [
+    [
+     "#0f172a",
+     "#1e293b"
+    ],
+    [
+     "#b91c1c",
+     "#dc2626"
+    ]
+   ],
+   "question": "WHO'S BRAVER?",
+   "pill": "HORROR GAME DUEL",
+   "pillColor": "#0a8a4a"
+  }
+ },
+ {
+  "name": "vs-3",
+  "game": "roblox",
+  "format": "VS duel",
+  "title": "Best Friends?",
+  "spec": {
+   "tpl": "vs",
+   "seed": 23,
+   "left": {
+    "kind": "rb",
+    "look": "blonde",
+    "face": "smug",
+    "pose": "cheer"
+   },
+   "right": {
+    "kind": "rb",
+    "look": "plaid",
+    "face": "angry",
+    "pose": "angry"
+   },
+   "colors": [
+    [
+     "#db2777",
+     "#ec4899"
+    ],
+    [
+     "#0891b2",
+     "#06b6d4"
+    ]
+   ],
+   "question": "BEST FRIENDS?",
+   "pill": "TRUST TEST",
+   "pillColor": "#ff7a00"
+  }
+ },
+ {
+  "name": "vs-4",
+  "game": "minecraft",
+  "format": "VS duel",
+  "title": "Who Survives?",
+  "spec": {
+   "tpl": "vs",
+   "seed": 24,
+   "left": {
+    "kind": "mc",
+    "look": "frost",
+    "face": "scared",
+    "pose": "angry"
+   },
+   "right": {
+    "kind": "mc",
+    "look": "ember",
+    "face": "cool",
+    "pose": "cheer"
+   },
+   "colors": [
+    [
+     "#1d4ed8",
+     "#2563eb"
+    ],
+    [
+     "#c2410c",
+     "#ea580c"
+    ]
+   ],
+   "question": "WHO SURVIVES?",
+   "pill": "HARDCORE 1V1",
+   "pillColor": "#8a3dff"
+  }
+ },
+ {
+  "name": "vs-5",
+  "game": "minecraft",
+  "format": "VS duel",
+  "title": "Best Builder?",
+  "spec": {
+   "tpl": "vs",
+   "seed": 25,
+   "left": {
+    "kind": "mc",
+    "look": "forest",
+    "face": "cool",
+    "pose": "angry"
+   },
+   "right": {
+    "kind": "mc",
+    "look": "candy",
+    "face": "cool",
+    "pose": "cheer"
+   },
+   "colors": [
+    [
+     "#15803d",
+     "#16a34a"
+    ],
+    [
+     "#c026d3",
+     "#d946ef"
+    ]
+   ],
+   "question": "BEST BUILDER?",
+   "pill": "BUILD BATTLE",
+   "pillColor": "#ff2a6a"
+  }
+ },
+ {
+  "name": "vs-6",
+  "game": "minecraft",
+  "format": "VS duel",
+  "title": "Who's Stronger?",
+  "spec": {
+   "tpl": "vs",
+   "seed": 26,
+   "left": {
+    "kind": "mc",
+    "look": "royal",
+    "armor": "diamond",
+    "face": "cool",
+    "pose": "angry"
+   },
+   "right": {
+    "kind": "mc",
+    "look": "shadow",
+    "armor": "netherite",
+    "face": "cool",
+    "pose": "cheer"
+   },
+   "colors": [
+    [
+     "#0e7490",
+     "#0891b2"
+    ],
+    [
+     "#3f3f46",
+     "#52525b"
+    ]
+   ],
+   "question": "WHO'S STRONGER?",
+   "pill": "PVP DUEL",
+   "pillColor": "#0a8a4a"
+  }
+ },
+ {
+  "name": "vs-7",
+  "game": "minecraft",
+  "format": "VS duel",
+  "title": "Who's Faster?",
+  "spec": {
+   "tpl": "vs",
+   "seed": 27,
+   "left": {
+    "kind": "mc",
+    "look": "ocean",
+    "face": "cool",
+    "pose": "angry"
+   },
+   "right": {
+    "kind": "mc",
+    "look": "miner",
+    "face": "scared",
+    "pose": "cheer"
+   },
+   "colors": [
+    [
+     "#0369a1",
+     "#0284c7"
+    ],
+    [
+     "#b45309",
+     "#d97706"
+    ]
+   ],
+   "question": "WHO'S FASTER?",
+   "pill": "SPEEDRUN RACE",
+   "pillColor": "#ff7a00"
+  }
+ },
+ {
+  "name": "ui-0",
+  "game": "minecraft",
+  "format": "Game UI story",
+  "title": "Nether Only",
+  "spec": {
+   "tpl": "ui",
+   "seed": 40,
+   "world": "nether",
+   "monster": "#ff6a1a",
+   "hero": {
+    "kind": "mc",
+    "look": "ember",
+    "face": "scared",
+    "pose": "scared"
+   },
+   "box": {
+    "label": "Deaths:",
+    "value": "???",
+    "icon": "skull"
+   },
+   "title": "NETHER ONLY",
+   "sub": "100 DAYS",
+   "bar": "hearts",
+   "barFull": 3,
+   "props": [
+    "sweat",
+    "swirl"
+   ],
+   "heroX": 170
+  }
+ },
+ {
+  "name": "ui-1",
+  "game": "minecraft",
+  "format": "Game UI story",
+  "title": "Frozen World",
+  "spec": {
+   "tpl": "ui",
+   "seed": 41,
+   "world": "snow",
+   "monster": null,
+   "hero": {
+    "kind": "mc",
+    "look": "ocean",
+    "face": "scared",
+    "pose": "scared"
+   },
+   "box": {
+    "label": "Temp:",
+    "value": "-40\u00b0",
+    "icon": "clock",
+    "color": "#4ab8ff",
+    "valueA": "#bfe8ff",
+    "valueB": "#4ab8ff"
+   },
+   "title": "FROZEN WORLD",
+   "sub": "SURVIVAL",
+   "bar": "hearts",
+   "barFull": 2,
+   "props": [
+    "sweat",
+    "swirl"
+   ],
+   "heroX": 170
+  }
+ },
+ {
+  "name": "ui-2",
+  "game": "minecraft",
+  "format": "Game UI story",
+  "title": "Cave Only",
+  "spec": {
+   "tpl": "ui",
+   "seed": 42,
+   "world": "cave",
+   "monster": "#2ad8ff",
+   "hero": {
+    "kind": "mc",
+    "look": "miner",
+    "face": "scared",
+    "pose": "scared"
+   },
+   "box": {
+    "label": "Diamonds:",
+    "value": "0",
+    "icon": "diamond",
+    "color": "#2ad8ff",
+    "valueA": "#bff6ff",
+    "valueB": "#2ad8ff"
+   },
+   "title": "CAVE ONLY",
+   "sub": "1 HEART",
+   "bar": "hearts",
+   "barFull": 1,
+   "props": [
+    "sweat",
+    "swirl"
+   ],
+   "heroX": 170
+  }
+ },
+ {
+  "name": "ui-3",
+  "game": "minecraft",
+  "format": "Game UI story",
+  "title": "One Block",
+  "spec": {
+   "tpl": "ui",
+   "seed": 43,
+   "world": "day",
+   "monster": null,
+   "hero": {
+    "kind": "mc",
+    "look": "candy",
+    "face": "scared",
+    "pose": "scared"
+   },
+   "box": {
+    "label": "Blocks:",
+    "value": "1",
+    "icon": "diamond",
+    "color": "#ffd21f",
+    "valueA": "#fff27a",
+    "valueB": "#ffb000"
+   },
+   "title": "ONE BLOCK",
+   "sub": "SKYBLOCK",
+   "bar": null,
+   "barFull": 0,
+   "props": [
+    "sweat",
+    "swirl"
+   ],
+   "heroX": 170
+  }
+ },
+ {
+  "name": "ui-4",
+  "game": "minecraft",
+  "format": "Game UI story",
+  "title": "Hunted",
+  "spec": {
+   "tpl": "ui",
+   "seed": 44,
+   "world": "sunset",
+   "monster": "#ff2020",
+   "hero": {
+    "kind": "mc",
+    "look": "royal",
+    "face": "scared",
+    "pose": "scared"
+   },
+   "box": {
+    "label": "Hunters:",
+    "value": "5",
+    "icon": "skull"
+   },
+   "title": "HUNTED",
+   "sub": "MANHUNT",
+   "bar": "hearts",
+   "barFull": 4,
+   "props": [
+    "sweat",
+    "swirl"
+   ],
+   "heroX": 170
+  }
+ },
+ {
+  "name": "ui-5",
+  "game": "roblox",
+  "format": "Game UI story",
+  "title": "Don'T Sleep",
+  "spec": {
+   "tpl": "ui",
+   "seed": 45,
+   "world": "night",
+   "monster": "#ff2020",
+   "hero": {
+    "kind": "rb",
+    "look": "plaid",
+    "face": "panic",
+    "pose": "scared"
+   },
+   "box": {
+    "label": "Time:",
+    "value": "3:00",
+    "icon": "clock"
+   },
+   "title": "DON'T SLEEP",
+   "sub": "3 AM",
+   "bar": null,
+   "barFull": 0,
+   "props": [
+    "sweat",
+    "swirl"
+   ],
+   "heroX": 120
+  }
+ },
+ {
+  "name": "ui-6",
+  "game": "roblox",
+  "format": "Game UI story",
+  "title": "Lost",
+  "spec": {
+   "tpl": "ui",
+   "seed": 46,
+   "world": "cave",
+   "monster": "#ffd21f",
+   "hero": {
+    "kind": "rb",
+    "look": "hoodie",
+    "face": "panic",
+    "pose": "scared"
+   },
+   "box": {
+    "label": "Exit:",
+    "value": "???",
+    "icon": "clock",
+    "color": "#ffd21f",
+    "valueA": "#fff27a",
+    "valueB": "#ffb000"
+   },
+   "title": "LOST",
+   "sub": "BACKROOMS",
+   "bar": null,
+   "barFull": 0,
+   "props": [
+    "sweat",
+    "swirl"
+   ],
+   "heroX": 120
+  }
+ },
+ {
+  "name": "ui-7",
+  "game": "roblox",
+  "format": "Game UI story",
+  "title": "Broke",
+  "spec": {
+   "tpl": "ui",
+   "seed": 47,
+   "world": "nether",
+   "monster": null,
+   "hero": {
+    "kind": "rb",
+    "look": "suit",
+    "face": "panic",
+    "pose": "scared"
+   },
+   "box": {
+    "label": "Money:",
+    "value": "$0",
+    "icon": "coin",
+    "color": "#ffd21f",
+    "valueA": "#fff27a",
+    "valueB": "#ffb000"
+   },
+   "title": "BROKE",
+   "sub": "DAY 1",
+   "bar": null,
+   "barFull": 0,
+   "props": [
+    "sweat",
+    "swirl"
+   ],
+   "heroX": 120
+  }
+ },
+ {
+  "name": "timer-0",
+  "game": "roblox",
+  "format": "Countdown",
+  "title": "Survive!",
+  "spec": {
+   "tpl": "timer",
+   "seed": 60,
+   "floor": [
+    "#4ab8ff",
+    "#0a2a6a"
+   ],
+   "hero": {
+    "kind": "rb",
+    "look": "redhead",
+    "face": "panic"
+   },
+   "timer": "01:30",
+   "title": "SURVIVE!",
+   "vig": "0,10,40"
+  }
+ },
+ {
+  "name": "timer-1",
+  "game": "roblox",
+  "format": "Countdown",
+  "title": "Find It!",
+  "spec": {
+   "tpl": "timer",
+   "seed": 61,
+   "floor": [
+    "#c06aff",
+    "#2a0a4a"
+   ],
+   "hero": {
+    "kind": "rb",
+    "look": "blonde",
+    "face": "panic"
+   },
+   "timer": "00:10",
+   "title": "FIND IT!",
+   "vig": "20,0,40"
+  }
+ },
+ {
+  "name": "timer-2",
+  "game": "roblox",
+  "format": "Countdown",
+  "title": "Run!",
+  "spec": {
+   "tpl": "timer",
+   "seed": 62,
+   "floor": [
+    "#ff6a6a",
+    "#4a0a0a"
+   ],
+   "hero": {
+    "kind": "rb",
+    "look": "noob",
+    "face": "panic"
+   },
+   "timer": "00:05",
+   "title": "RUN!",
+   "vig": "40,0,0"
+  }
+ },
+ {
+  "name": "timer-3",
+  "game": "roblox",
+  "format": "Countdown",
+  "title": "Get Rich",
+  "spec": {
+   "tpl": "timer",
+   "seed": 63,
+   "floor": [
+    "#ffe36a",
+    "#5a4a0a"
+   ],
+   "hero": {
+    "kind": "rb",
+    "look": "suit",
+    "face": "panic"
+   },
+   "timer": "10:00",
+   "title": "GET RICH",
+   "vig": "40,30,0"
+  }
+ },
+ {
+  "name": "timer-4",
+  "game": "minecraft",
+  "format": "Countdown",
+  "title": "Beat It",
+  "spec": {
+   "tpl": "timer",
+   "seed": 64,
+   "floor": [
+    "#3dff6a",
+    "#06451a"
+   ],
+   "hero": {
+    "kind": "mc",
+    "look": "frost",
+    "face": "scared"
+   },
+   "timer": "00:30",
+   "title": "BEAT IT",
+   "vig": "0,25,8"
+  }
+ },
+ {
+  "name": "timer-5",
+  "game": "minecraft",
+  "format": "Countdown",
+  "title": "No Jumping",
+  "spec": {
+   "tpl": "timer",
+   "seed": 65,
+   "floor": [
+    "#ff8a3a",
+    "#4a1406"
+   ],
+   "hero": {
+    "kind": "mc",
+    "look": "ember",
+    "face": "scared"
+   },
+   "timer": "05:00",
+   "title": "NO JUMPING",
+   "vig": "40,10,0"
+  }
+ },
+ {
+  "name": "timer-6",
+  "game": "minecraft",
+  "format": "Countdown",
+  "title": "Speedrun",
+  "spec": {
+   "tpl": "timer",
+   "seed": 66,
+   "floor": [
+    "#ff9ad8",
+    "#4a0a3a"
+   ],
+   "hero": {
+    "kind": "mc",
+    "look": "candy",
+    "face": "scared"
+   },
+   "timer": "00:45",
+   "title": "SPEEDRUN",
+   "vig": "40,0,30"
+  }
+ },
+ {
+  "name": "timer-7",
+  "game": "roblox",
+  "format": "Countdown",
+  "title": "Hide!",
+  "spec": {
+   "tpl": "timer",
+   "seed": 67,
+   "floor": [
+    "#5affd8",
+    "#04403a"
+   ],
+   "hero": {
+    "kind": "rb",
+    "look": "hoodie",
+    "face": "panic"
+   },
+   "timer": "02:00",
+   "title": "HIDE!",
+   "vig": "0,30,25"
+  }
+ },
+ {
+  "name": "show-0",
+  "game": "minecraft",
+  "format": "Showcase",
+  "title": "Full Diamond",
+  "spec": {
+   "tpl": "showcase",
+   "seed": 80,
+   "burst": [
+    "#7ad8ff",
+    "#bdf0ff"
+   ],
+   "world": "snow",
+   "hero": {
+    "kind": "mc",
+    "look": "ocean",
+    "armor": "diamond",
+    "face": "cool",
+    "pose": "flex"
+   },
+   "label": "FULL DIAMOND",
+   "labelColor": "#00b8ff",
+   "weapon": "#4fe0e8",
+   "side": "left"
+  }
+ },
+ {
+  "name": "show-1",
+  "game": "minecraft",
+  "format": "Showcase",
+  "title": "Gold Only",
+  "spec": {
+   "tpl": "showcase",
+   "seed": 81,
+   "burst": [
+    "#ffd24a",
+    "#fff0a0"
+   ],
+   "world": "sunset",
+   "hero": {
+    "kind": "mc",
+    "look": "royal",
+    "armor": "gold",
+    "face": "cool",
+    "pose": "flex"
+   },
+   "label": "GOLD ONLY",
+   "labelColor": "#ff2020",
+   "weapon": "#ffd24a",
+   "side": "right"
+  }
+ },
+ {
+  "name": "show-2",
+  "game": "minecraft",
+  "format": "Showcase",
+  "title": "Iron Man?",
+  "spec": {
+   "tpl": "showcase",
+   "seed": 82,
+   "burst": [
+    "#c8c8d4",
+    "#eeeef4"
+   ],
+   "world": "day",
+   "hero": {
+    "kind": "mc",
+    "look": "miner",
+    "armor": "iron",
+    "face": "cool",
+    "pose": "flex"
+   },
+   "label": "IRON MAN?",
+   "labelColor": "#ff2020",
+   "weapon": "#d8d8e0",
+   "side": "left"
+  }
+ },
+ {
+  "name": "show-3",
+  "game": "minecraft",
+  "format": "Showcase",
+  "title": "Op Sword",
+  "spec": {
+   "tpl": "showcase",
+   "seed": 83,
+   "burst": [
+    "#7aff8a",
+    "#c8ffd0"
+   ],
+   "world": "day",
+   "hero": {
+    "kind": "mc",
+    "look": "forest",
+    "face": "cool",
+    "pose": "flex"
+   },
+   "label": "OP SWORD",
+   "labelColor": "#ff2020",
+   "weapon": "#3dff6a",
+   "side": "right"
+  }
+ },
+ {
+  "name": "show-4",
+  "game": "roblox",
+  "format": "Showcase",
+  "title": "Max Level",
+  "spec": {
+   "tpl": "showcase",
+   "seed": 84,
+   "burst": [
+    "#ffb36b",
+    "#ffcf96"
+   ],
+   "world": "sunset",
+   "hero": {
+    "kind": "rb",
+    "look": "suit",
+    "face": "smug",
+    "pose": "point"
+   },
+   "label": "MAX LEVEL",
+   "labelColor": "#ff2020",
+   "weapon": null,
+   "side": "right"
+  }
+ },
+ {
+  "name": "show-5",
+  "game": "roblox",
+  "format": "Showcase",
+  "title": "Rarest Item",
+  "spec": {
+   "tpl": "showcase",
+   "seed": 85,
+   "burst": [
+    "#b07aff",
+    "#d8c0ff"
+   ],
+   "world": "night",
+   "hero": {
+    "kind": "rb",
+    "look": "punk",
+    "face": "smug",
+    "pose": "wave"
+   },
+   "label": "RAREST ITEM",
+   "labelColor": "#ffd21f",
+   "weapon": null,
+   "side": "left"
+  }
+ },
+ {
+  "name": "show-6",
+  "game": "roblox",
+  "format": "Showcase",
+  "title": "New Outfit",
+  "spec": {
+   "tpl": "showcase",
+   "seed": 86,
+   "burst": [
+    "#ff8ad0",
+    "#ffc8ea"
+   ],
+   "world": "sunset",
+   "hero": {
+    "kind": "rb",
+    "look": "blonde",
+    "face": "smug",
+    "pose": "cheer"
+   },
+   "label": "NEW OUTFIT",
+   "labelColor": "#ff2a8a",
+   "weapon": null,
+   "side": "right"
+  }
+ },
+ {
+  "name": "show-7",
+  "game": "minecraft",
+  "format": "Showcase",
+  "title": "Nether King",
+  "spec": {
+   "tpl": "showcase",
+   "seed": 87,
+   "burst": [
+    "#ff8a5a",
+    "#ffc0a0"
+   ],
+   "world": "nether",
+   "hero": {
+    "kind": "mc",
+    "look": "ember",
+    "armor": "netherite",
+    "face": "cool",
+    "pose": "flex"
+   },
+   "label": "NETHER KING",
+   "labelColor": "#ffd21f",
+   "weapon": "#ff6a1a",
+   "side": "left"
+  }
+ },
+ {
+  "name": "danger-0",
+  "game": "roblox",
+  "format": "Danger moment",
+  "title": "Toxic Obby",
+  "spec": {
+   "tpl": "danger",
+   "seed": 100,
+   "hazard": "acid",
+   "hero": {
+    "kind": "rb",
+    "look": "hoodie",
+    "face": "panic"
+   },
+   "title": "TOXIC OBBY",
+   "sub": null,
+   "sky": [
+    "#2a1a6a",
+    "#7a5aff"
+   ],
+   "heroX": 180
+  }
+ },
+ {
+  "name": "danger-1",
+  "game": "roblox",
+  "format": "Danger moment",
+  "title": "Void Jump",
+  "spec": {
+   "tpl": "danger",
+   "seed": 101,
+   "hazard": "void",
+   "hero": {
+    "kind": "rb",
+    "look": "punk",
+    "face": "panic"
+   },
+   "title": "VOID JUMP",
+   "sub": null,
+   "sky": [
+    "#05010f",
+    "#2a0a5a"
+   ],
+   "heroX": 180
+  }
+ },
+ {
+  "name": "danger-2",
+  "game": "roblox",
+  "format": "Danger moment",
+  "title": "Thin Ice",
+  "spec": {
+   "tpl": "danger",
+   "seed": 102,
+   "hazard": "ice",
+   "hero": {
+    "kind": "rb",
+    "look": "redhead",
+    "face": "panic"
+   },
+   "title": "THIN ICE",
+   "sub": null,
+   "sky": [
+    "#4a7ad0",
+    "#cfe8ff"
+   ],
+   "heroX": 180
+  }
+ },
+ {
+  "name": "danger-3",
+  "game": "roblox",
+  "format": "Danger moment",
+  "title": "Last Jump",
+  "spec": {
+   "tpl": "danger",
+   "seed": 103,
+   "hazard": "lava",
+   "hero": {
+    "kind": "rb",
+    "look": "blonde",
+    "face": "panic"
+   },
+   "title": "LAST JUMP",
+   "sub": null,
+   "sky": [
+    "#1e8fff",
+    "#8fd8ff"
+   ],
+   "heroX": 180
+  }
+ },
+ {
+  "name": "danger-4",
+  "game": "minecraft",
+  "format": "Danger moment",
+  "title": "Floor Is Lava",
+  "spec": {
+   "tpl": "danger",
+   "seed": 104,
+   "hazard": "lava",
+   "hero": {
+    "kind": "mc",
+    "look": "ember",
+    "face": "scared"
+   },
+   "title": "FLOOR IS",
+   "sub": "LAVA",
+   "sky": [
+    "#3a0a0a",
+    "#ff6a3a"
+   ],
+   "heroX": 260
+  }
+ },
+ {
+  "name": "danger-5",
+  "game": "minecraft",
+  "format": "Danger moment",
+  "title": "1 Block Left",
+  "spec": {
+   "tpl": "danger",
+   "seed": 105,
+   "hazard": "acid",
+   "hero": {
+    "kind": "mc",
+    "look": "frost",
+    "face": "scared"
+   },
+   "title": "1 BLOCK",
+   "sub": "LEFT",
+   "sky": [
+    "#0a2a1a",
+    "#3aa86a"
+   ],
+   "heroX": 260
+  }
+ },
+ {
+  "name": "danger-6",
+  "game": "minecraft",
+  "format": "Danger moment",
+  "title": "The End?",
+  "spec": {
+   "tpl": "danger",
+   "seed": 106,
+   "hazard": "void",
+   "hero": {
+    "kind": "mc",
+    "look": "shadow",
+    "face": "scared"
+   },
+   "title": "THE END?",
+   "sub": null,
+   "sky": [
+    "#020008",
+    "#1a0a3a"
+   ],
+   "heroX": 260
+  }
+ },
+ {
+  "name": "danger-7",
+  "game": "minecraft",
+  "format": "Danger moment",
+  "title": "Don'T Slip",
+  "spec": {
+   "tpl": "danger",
+   "seed": 107,
+   "hazard": "ice",
+   "hero": {
+    "kind": "mc",
+    "look": "ocean",
+    "face": "scared"
+   },
+   "title": "DON'T SLIP",
+   "sub": null,
+   "sky": [
+    "#2a5ab0",
+    "#bfe0ff"
+   ],
+   "heroX": 260
+  }
+ },
+ {
+  "name": "anim-0",
+  "game": "minecraft",
+  "format": "Animation",
+  "title": "Netherite set turntable",
+  "spec": {
+   "anim": "turntable",
+   "seed": 1,
+   "burst": [
+    "#ffb36b",
+    "#ffcf96"
+   ],
+   "hero": {
+    "kind": "mc",
+    "look": "shadow",
+    "armor": "netherite",
+    "face": "cool"
+   },
+   "label": "NETHERITE SET"
+  },
+  "anim": true
+ },
+ {
+  "name": "anim-1",
+  "game": "roblox",
+  "format": "Animation",
+  "title": "Avatar turntable",
+  "spec": {
+   "anim": "turntable",
+   "seed": 2,
+   "burst": [
+    "#1f5fff",
+    "#3b7bff"
+   ],
+   "hero": {
+    "kind": "rb",
+    "look": "suit",
+    "face": "smug"
+   },
+   "label": "MY AVATAR"
+  },
+  "anim": true
+ },
+ {
+  "name": "anim-2",
+  "game": "roblox",
+  "format": "Animation",
+  "title": "Wave emote",
+  "spec": {
+   "anim": "emote",
+   "seed": 3,
+   "move": "wave",
+   "world": "day",
+   "hero": {
+    "kind": "rb",
+    "look": "plaid",
+    "face": "smug"
+   },
+   "label": "HEY!"
+  },
+  "anim": true
+ },
+ {
+  "name": "anim-3",
+  "game": "roblox",
+  "format": "Animation",
+  "title": "Dance emote",
+  "spec": {
+   "anim": "emote",
+   "seed": 4,
+   "move": "dance",
+   "world": "sunset",
+   "hero": {
+    "kind": "rb",
+    "look": "blonde",
+    "face": "smug"
+   }
+  },
+  "anim": true
+ },
+ {
+  "name": "anim-4",
+  "game": "minecraft",
+  "format": "Animation",
+  "title": "Victory jump",
+  "spec": {
+   "anim": "emote",
+   "seed": 5,
+   "move": "victory",
+   "world": "day",
+   "hero": {
+    "kind": "mc",
+    "look": "frost",
+    "face": "cool"
+   },
+   "label": "GG!"
+  },
+  "anim": true
+ },
+ {
+  "name": "anim-5",
+  "game": "minecraft",
+  "format": "Animation",
+  "title": "Panic loop",
+  "spec": {
+   "anim": "emote",
+   "seed": 6,
+   "move": "panic",
+   "world": "nether",
+   "hero": {
+    "kind": "mc",
+    "look": "ember",
+    "face": "scared"
+   }
+  },
+  "anim": true
+ },
+ {
+  "name": "anim-6",
+  "game": "roblox",
+  "format": "Animation",
+  "title": "VS intro",
+  "spec": {
+   "anim": "vsintro",
+   "seed": 7,
+   "left": {
+    "kind": "rb",
+    "look": "bacon",
+    "face": "angry"
+   },
+   "right": {
+    "kind": "rb",
+    "look": "redhead",
+    "face": "smug"
+   },
+   "question": "WHO'S FASTER?"
+  },
+  "anim": true
+ },
+ {
+  "name": "anim-7",
+  "game": "roblox",
+  "format": "Animation",
+  "title": "Countdown",
+  "spec": {
+   "anim": "countdown",
+   "seed": 8,
+   "hero": {
+    "kind": "rb",
+    "look": "noob",
+    "face": "panic"
+   }
+  },
+  "anim": true
+ },
+ {
+  "name": "anim-8",
+  "game": "minecraft",
+  "format": "Animation",
+  "title": "Day 100 title reveal",
+  "spec": {
+   "anim": "titlepop",
+   "seed": 9,
+   "world": "night",
+   "monster": "#ff2020",
+   "hero": {
+    "kind": "mc",
+    "look": "frost",
+    "face": "scared"
+   },
+   "title": "DAY 100",
+   "sub": "HARDCORE"
+  },
+  "anim": true
+ },
+ {
+  "name": "anim-9",
+  "game": "minecraft",
+  "format": "Animation",
+  "title": "Snow dance",
+  "spec": {
+   "anim": "emote",
+   "seed": 10,
+   "move": "dance",
+   "world": "snow",
+   "hero": {
+    "kind": "mc",
+    "look": "candy",
+    "face": "cool"
+   }
+  },
+  "anim": true
+ }
+]

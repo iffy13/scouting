@@ -31,6 +31,206 @@
     "08-minecraft-server-new-season.jpg": {
       "title": "New season",
       "format": "Server key art"
+    },
+    "09-minecraft-netherite-set-turntable.mp4": {
+      "title": "Netherite set turntable",
+      "format": "Animation"
+    },
+    "10-roblox-avatar-turntable.mp4": {
+      "title": "Avatar turntable",
+      "format": "Animation"
+    },
+    "11-roblox-wave-emote.mp4": {
+      "title": "Wave emote",
+      "format": "Animation"
+    },
+    "12-roblox-dance-emote.mp4": {
+      "title": "Dance emote",
+      "format": "Animation"
+    },
+    "13-minecraft-victory-jump.mp4": {
+      "title": "Victory jump",
+      "format": "Animation"
+    },
+    "14-minecraft-panic-loop.mp4": {
+      "title": "Panic loop",
+      "format": "Animation"
+    },
+    "15-roblox-vs-intro.mp4": {
+      "title": "VS intro",
+      "format": "Animation"
+    },
+    "16-roblox-countdown.mp4": {
+      "title": "Countdown",
+      "format": "Animation"
+    },
+    "17-minecraft-day-100-title-reveal.mp4": {
+      "title": "Day 100 title reveal",
+      "format": "Animation"
+    },
+    "18-minecraft-snow-dance.mp4": {
+      "title": "Snow dance",
+      "format": "Animation"
+    },
+    "19-roblox-who-s-richer.jpg": {
+      "title": "Who's Richer?",
+      "format": "VS duel"
+    },
+    "20-roblox-noob-vs-pro.jpg": {
+      "title": "Noob Vs Pro",
+      "format": "VS duel"
+    },
+    "21-roblox-who-s-braver.jpg": {
+      "title": "Who's Braver?",
+      "format": "VS duel"
+    },
+    "22-roblox-best-friends.jpg": {
+      "title": "Best Friends?",
+      "format": "VS duel"
+    },
+    "23-minecraft-who-survives.jpg": {
+      "title": "Who Survives?",
+      "format": "VS duel"
+    },
+    "24-minecraft-best-builder.jpg": {
+      "title": "Best Builder?",
+      "format": "VS duel"
+    },
+    "25-minecraft-who-s-stronger.jpg": {
+      "title": "Who's Stronger?",
+      "format": "VS duel"
+    },
+    "26-minecraft-who-s-faster.jpg": {
+      "title": "Who's Faster?",
+      "format": "VS duel"
+    },
+    "27-minecraft-nether-only.jpg": {
+      "title": "Nether Only",
+      "format": "Game UI story"
+    },
+    "28-minecraft-frozen-world.jpg": {
+      "title": "Frozen World",
+      "format": "Game UI story"
+    },
+    "29-minecraft-cave-only.jpg": {
+      "title": "Cave Only",
+      "format": "Game UI story"
+    },
+    "30-minecraft-one-block.jpg": {
+      "title": "One Block",
+      "format": "Game UI story"
+    },
+    "31-minecraft-hunted.jpg": {
+      "title": "Hunted",
+      "format": "Game UI story"
+    },
+    "32-roblox-don-t-sleep.jpg": {
+      "title": "Don'T Sleep",
+      "format": "Game UI story"
+    },
+    "33-roblox-lost.jpg": {
+      "title": "Lost",
+      "format": "Game UI story"
+    },
+    "34-roblox-broke.jpg": {
+      "title": "Broke",
+      "format": "Game UI story"
+    },
+    "35-roblox-survive.jpg": {
+      "title": "Survive!",
+      "format": "Countdown"
+    },
+    "36-roblox-find-it.jpg": {
+      "title": "Find It!",
+      "format": "Countdown"
+    },
+    "37-roblox-run.jpg": {
+      "title": "Run!",
+      "format": "Countdown"
+    },
+    "38-roblox-get-rich.jpg": {
+      "title": "Get Rich",
+      "format": "Countdown"
+    },
+    "39-minecraft-beat-it.jpg": {
+      "title": "Beat It",
+      "format": "Countdown"
+    },
+    "40-minecraft-no-jumping.jpg": {
+      "title": "No Jumping",
+      "format": "Countdown"
+    },
+    "41-minecraft-speedrun.jpg": {
+      "title": "Speedrun",
+      "format": "Countdown"
+    },
+    "42-roblox-hide.jpg": {
+      "title": "Hide!",
+      "format": "Countdown"
+    },
+    "43-minecraft-full-diamond.jpg": {
+      "title": "Full Diamond",
+      "format": "Showcase"
+    },
+    "44-minecraft-gold-only.jpg": {
+      "title": "Gold Only",
+      "format": "Showcase"
+    },
+    "45-minecraft-iron-man.jpg": {
+      "title": "Iron Man?",
+      "format": "Showcase"
+    },
+    "46-minecraft-op-sword.jpg": {
+      "title": "Op Sword",
+      "format": "Showcase"
+    },
+    "47-roblox-max-level.jpg": {
+      "title": "Max Level",
+      "format": "Showcase"
+    },
+    "48-roblox-rarest-item.jpg": {
+      "title": "Rarest Item",
+      "format": "Showcase"
+    },
+    "49-roblox-new-outfit.jpg": {
+      "title": "New Outfit",
+      "format": "Showcase"
+    },
+    "50-minecraft-nether-king.jpg": {
+      "title": "Nether King",
+      "format": "Showcase"
+    },
+    "51-roblox-toxic-obby.jpg": {
+      "title": "Toxic Obby",
+      "format": "Danger moment"
+    },
+    "52-roblox-void-jump.jpg": {
+      "title": "Void Jump",
+      "format": "Danger moment"
+    },
+    "53-roblox-thin-ice.jpg": {
+      "title": "Thin Ice",
+      "format": "Danger moment"
+    },
+    "54-roblox-last-jump.jpg": {
+      "title": "Last Jump",
+      "format": "Danger moment"
+    },
+    "55-minecraft-floor-is-lava.jpg": {
+      "title": "Floor Is Lava",
+      "format": "Danger moment"
+    },
+    "56-minecraft-1-block-left.jpg": {
+      "title": "1 Block Left",
+      "format": "Danger moment"
+    },
+    "57-minecraft-the-end.jpg": {
+      "title": "The End?",
+      "format": "Danger moment"
+    },
+    "58-minecraft-don-t-slip.jpg": {
+      "title": "Don'T Slip",
+      "format": "Danger moment"
     }
   },
   "before-after": {
