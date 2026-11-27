@@ -15,8 +15,8 @@ Deliverability rules built in (they are why it is plain and short on purpose):
 
 Needs: the mailbox secrets the old autopilot used (MAILBOX_MAP_JSON plus ACCOUNT_*_JSON tokens and/or
 SMTP_ACCOUNTS_JSON), SENDER_NAME, TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID.
-Optional: ROBLOX_MAILBOX (which address sends; default the 3D rendering mailbox), ROBLOX_DAILY_CAP (default 15),
-ROBLOX_PER_RUN (default 8), POSTAL_ADDRESS (added under the opt out line, needed for US commercial email law).
+Optional: ROBLOX_MAILBOX (which address sends; default the 3D rendering mailbox), ROBLOX_DAILY_CAP (default 50),
+ROBLOX_PER_RUN (default 10), POSTAL_ADDRESS (added under the opt out line, needed for US commercial email law).
 
 Run:  python roblox_outreach.py             normal run
       python roblox_outreach.py --dry       show what would be sent, send nothing, save nothing
@@ -36,11 +36,12 @@ STATE_DIR = os.getenv("ROBLOX_SCOUT_STATE", "roblox_scout_state")
 SENDER_NAME = os.getenv("SENDER_NAME", "").strip() or "Samuel"
 FIRST_NAME = SENDER_NAME.split()[0]
 POSTAL_ADDRESS = os.getenv("POSTAL_ADDRESS", "").strip()
-DAILY_CAP = int(os.getenv("ROBLOX_DAILY_CAP", "15") or 15)
-PER_RUN = int(os.getenv("ROBLOX_PER_RUN", "8") or 8)
-MIN_GAP = float(os.getenv("ROBLOX_MIN_GAP", "4") or 4)
-MAX_GAP = float(os.getenv("ROBLOX_MAX_GAP", "9") or 9)
+DAILY_CAP = int(os.getenv("ROBLOX_DAILY_CAP", "50") or 50)
+PER_RUN = int(os.getenv("ROBLOX_PER_RUN", "10") or 10)
+MIN_GAP = float(os.getenv("ROBLOX_MIN_GAP", "3") or 3)
+MAX_GAP = float(os.getenv("ROBLOX_MAX_GAP", "7") or 7)
 FOLLOWUP_DAYS = int(os.getenv("ROBLOX_FOLLOWUP_DAYS", "4") or 4)
+BOUNCE_LIMIT = float(os.getenv("ROBLOX_BOUNCE_LIMIT", "0.08") or 0.08)
 PAUSED = os.getenv("ROBLOX_OUTREACH_PAUSED", "").lower() in ("1", "true", "yes")
 TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TG_CHAT = os.getenv("TELEGRAM_CHAT_ID", "")
@@ -394,6 +395,14 @@ def run():
         save_leads(leads)
 
     budget = max(0, min(PER_RUN, DAILY_CAP - sent_today(leads)))
+    # Safety stop: a high bounce rate is what gets a domain blacklisted. Look at the last 40 first emails.
+    recent = sorted((l for l in leads if l.get("sent_at")), key=lambda l: l["sent_at"])[-40:]
+    bounced = sum(1 for l in recent if l.get("status") == "bounced")
+    if len(recent) >= 20 and bounced / len(recent) > BOUNCE_LIMIT:
+        telegram(f"Roblox outreach PAUSED: {bounced} of the last {len(recent)} emails bounced "
+                 f"({bounced * 100 // len(recent)}%). Sending more would damage your domain. Tell Claude so the lead "
+                 f"filter can be fixed; it restarts by itself once the rate is back under {int(BOUNCE_LIMIT * 100)}%.")
+        budget = 0
     if budget == 0:
         print("daily cap reached")
 

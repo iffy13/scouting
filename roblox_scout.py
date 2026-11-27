@@ -300,9 +300,16 @@ def clean_reply(text):
 
 # =========================================================================== source 2: YouTube email leads
 YT_TOPICS = [
-    "roblox story", "roblox funny moments", "roblox brookhaven", "roblox obby",
-    "roblox horror", "roblox devlog", "making a roblox game", "roblox but", "roblox tycoon",
-    "roblox blox fruits", "roblox shorts", "roblox studio tutorial", "roblox edit",
+    "roblox story", "roblox funny moments", "roblox brookhaven", "roblox obby", "roblox horror", "roblox devlog",
+    "making a roblox game", "roblox but", "roblox tycoon", "roblox blox fruits", "roblox shorts",
+    "roblox studio tutorial", "roblox edit", "roblox doors", "roblox pet simulator", "roblox adopt me",
+    "roblox bedwars", "roblox jailbreak", "roblox murder mystery 2", "roblox tower defense", "roblox anime game",
+    "roblox simulator", "roblox roleplay", "roblox dress to impress", "roblox grow a garden", "roblox rivals",
+    "roblox the strongest battlegrounds", "roblox piggy", "roblox natural disaster", "roblox speedrun",
+    "roblox challenge", "roblox trolling", "roblox hide and seek", "roblox family roleplay", "roblox scary story",
+    "roblox animation story", "roblox lets play", "roblox update", "roblox new game", "roblox game review",
+    "my roblox game", "roblox game dev", "roblox scripting", "roblox building", "roblox ugc",
+    "roblox outfit ideas", "roblox avatar", "roblox fashion", "roblox minigames", "roblox with friends",
 ]
 YT_SERPER = [
     'site:youtube.com roblox "@gmail.com" "business"',
@@ -381,8 +388,9 @@ def youtube_api_leads(seen):
     after = (datetime.now(timezone.utc) - timedelta(days=YT_RECENT_DAYS)).strftime("%Y-%m-%dT%H:%M:%SZ")
     channels, last_upload = [], {}
     topics = list(YT_TOPICS)
-    day = datetime.now(timezone.utc).timetuple().tm_yday
-    topics = topics[day % len(topics):] + topics[:day % len(topics)]  # rotate so every topic gets used
+    slot = (datetime.now(timezone.utc).timetuple().tm_yday * 6 + datetime.now(timezone.utc).hour // 4) * YT_MAX_QUERIES
+    slot %= len(topics)
+    topics = topics[slot:] + topics[:slot]  # each 4 hour run starts where the last one stopped
     for q in topics[:YT_MAX_QUERIES]:
         try:
             data = yt_get("search", {"part": "snippet", "q": q, "type": "video", "order": "date",
@@ -487,6 +495,66 @@ WEB_QUERIES = [
     ('site:carrd.co roblox studio OR developer OR youtuber', "CREATOR"),
     ('"roblox" youtuber OR streamer "business inquiries" "@gmail.com" -editor -gfx -commissions', "CREATOR"),
     ('"roblox" tiktok creator "business" "@gmail.com" -editor -gfx -commissions', "CREATOR"),
+    ('"roblox simulator game" studio OR team OR developers "contact" -site:roblox.com -site:youtube.com', "STUDIO"),
+    ('"roblox tycoon game" studio OR team OR developers "contact" -site:roblox.com -site:youtube.com', "STUDIO"),
+    ('"roblox horror game" studio OR team OR developers "contact" -site:roblox.com -site:youtube.com', "STUDIO"),
+    ('"roblox obby game" studio OR team OR developers "contact" -site:roblox.com -site:youtube.com', "STUDIO"),
+    ('"roblox anime game" studio OR team OR developers "contact" -site:roblox.com -site:youtube.com', "STUDIO"),
+    ('"roblox fighting game" studio OR team OR developers "contact" -site:roblox.com -site:youtube.com', "STUDIO"),
+    ('"roblox roleplay game" studio OR team OR developers "contact" -site:roblox.com -site:youtube.com', "STUDIO"),
+    ('"roblox tower defense game" studio OR team OR developers "contact" -site:roblox.com -site:youtube.com', "STUDIO"),
+    ('"roblox racing game" studio OR team OR developers "contact" -site:roblox.com -site:youtube.com', "STUDIO"),
+    ('"roblox survival game" studio OR team OR developers "contact" -site:roblox.com -site:youtube.com', "STUDIO"),
+    ('"roblox battlegrounds game" studio OR team OR developers "contact" -site:roblox.com -site:youtube.com', "STUDIO"),
+    ('"roblox fashion game" studio OR team OR developers "contact" -site:roblox.com -site:youtube.com', "STUDIO"),
+    ('"roblox pet game" studio OR team OR developers "contact" -site:roblox.com -site:youtube.com', "STUDIO"),
+    ('"roblox shooter game" studio OR team OR developers "contact" -site:roblox.com -site:youtube.com', "STUDIO"),
+    ('"roblox" game studio UK "contact" -site:roblox.com', "STUDIO"),
+    ('"roblox" coding OR "game design" class OR camp UK "contact us"', "EDU"),
+    ('"roblox" game studio Canada "contact" -site:roblox.com', "STUDIO"),
+    ('"roblox" coding OR "game design" class OR camp Canada "contact us"', "EDU"),
+    ('"roblox" game studio Australia "contact" -site:roblox.com', "STUDIO"),
+    ('"roblox" coding OR "game design" class OR camp Australia "contact us"', "EDU"),
+    ('"roblox" game studio Germany "contact" -site:roblox.com', "STUDIO"),
+    ('"roblox" coding OR "game design" class OR camp Germany "contact us"', "EDU"),
+    ('"roblox" game studio Netherlands "contact" -site:roblox.com', "STUDIO"),
+    ('"roblox" coding OR "game design" class OR camp Netherlands "contact us"', "EDU"),
+    ('"roblox" game studio Sweden "contact" -site:roblox.com', "STUDIO"),
+    ('"roblox" coding OR "game design" class OR camp Sweden "contact us"', "EDU"),
+    ('"roblox" game studio Brazil "contact" -site:roblox.com', "STUDIO"),
+    ('"roblox" coding OR "game design" class OR camp Brazil "contact us"', "EDU"),
+    ('"roblox" game studio Philippines "contact" -site:roblox.com', "STUDIO"),
+    ('"roblox" coding OR "game design" class OR camp Philippines "contact us"', "EDU"),
+    ('"roblox" game studio Indonesia "contact" -site:roblox.com', "STUDIO"),
+    ('"roblox" coding OR "game design" class OR camp Indonesia "contact us"', "EDU"),
+    ('"roblox" game studio Poland "contact" -site:roblox.com', "STUDIO"),
+    ('"roblox" coding OR "game design" class OR camp Poland "contact us"', "EDU"),
+    ('"roblox" game studio Spain "contact" -site:roblox.com', "STUDIO"),
+    ('"roblox" coding OR "game design" class OR camp Spain "contact us"', "EDU"),
+    ('"roblox" game studio France "contact" -site:roblox.com', "STUDIO"),
+    ('"roblox" coding OR "game design" class OR camp France "contact us"', "EDU"),
+    ('"roblox" game studio Singapore "contact" -site:roblox.com', "STUDIO"),
+    ('"roblox" coding OR "game design" class OR camp Singapore "contact us"', "EDU"),
+    ('"roblox" game studio Los Angeles "contact" -site:roblox.com', "STUDIO"),
+    ('"roblox" coding OR "game design" class OR camp Los Angeles "contact us"', "EDU"),
+    ('"roblox" game studio New York "contact" -site:roblox.com', "STUDIO"),
+    ('"roblox" coding OR "game design" class OR camp New York "contact us"', "EDU"),
+    ('"roblox" game studio Texas "contact" -site:roblox.com', "STUDIO"),
+    ('"roblox" coding OR "game design" class OR camp Texas "contact us"', "EDU"),
+    ('site:linktr.ee roblox developer', "CREATOR"),
+    ('site:linktr.ee roblox studio', "CREATOR"),
+    ('site:linktr.ee "roblox" creator business', "CREATOR"),
+    ('site:beacons.ai roblox youtuber', "CREATOR"),
+    ('site:carrd.co "roblox developer"', "CREATOR"),
+    ('site:bio.link roblox', "CREATOR"),
+    ('site:about.me roblox developer', "CREATOR"),
+    ('site:solo.to roblox', "CREATOR"),
+    ('site:lnk.bio roblox', "CREATOR"),
+    ('"roblox" brand partnerships agency "contact"', "AGENCY"),
+    ('"roblox" "metaverse agency" contact', "AGENCY"),
+    ('"roblox" esports team "business inquiries"', "AGENCY"),
+    ('"roblox" group owner "business" "@gmail.com"', "AGENCY"),
+    ('"roblox" studio "hiring" "contact" -site:roblox.com -site:devforum.roblox.com', "AGENCY"),
 ]
 WEB_MAX_QUERIES = int(os.getenv("WEB_MAX_QUERIES", "8"))
 WEB_MAX_SITES = int(os.getenv("WEB_MAX_SITES", "40"))
@@ -576,7 +644,7 @@ def usable_email(email, site_host=""):
 def web_leads(seen):
     leads, checked, sites = [], [], []
     day = datetime.now(timezone.utc).timetuple().tm_yday
-    offset = (day * 2 + datetime.now(timezone.utc).hour // 12) % len(WEB_QUERIES)
+    offset = ((day * 6 + datetime.now(timezone.utc).hour // 4) * WEB_MAX_QUERIES) % len(WEB_QUERIES)
     queries = WEB_QUERIES[offset:] + WEB_QUERIES[:offset]
     for q, kind in queries[:WEB_MAX_QUERIES]:
         try:
@@ -631,6 +699,23 @@ def web_leads(seen):
     return leads, checked
 
 # =========================================================================== shared plumbing
+def serper_balance():
+    """Credits left on the Serper account, or None when it cannot be read."""
+    if not SERPER_KEY:
+        return None
+    req = urllib.request.Request("https://google.serper.dev/account", headers={"X-API-KEY": SERPER_KEY})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            data = json.load(r)
+        for k in ("balance", "credits", "creditsLeft", "remaining"):
+            if k in data:
+                return int(float(data[k]))
+        print(f"serper account answer: {list(data)}")
+    except Exception as e:
+        print(f"serper balance check failed: {e}")
+    return None
+
+
 def serper(query, window=None):
     body = json.dumps({"q": query, "num": 10, "tbs": f"qdr:{window or WINDOW}"}).encode()
     req = urllib.request.Request("https://google.serper.dev/search", data=body, method="POST",
@@ -786,6 +871,14 @@ def main():
     seen = prune(load_json("seen.json", {}))
     now = datetime.now(timezone.utc).isoformat()
     posts, email_leads, stopped, total = [], [], None, len(load_json("email_leads.json", []))
+    global MAX_POST_QUERIES, WEB_MAX_QUERIES, YT_SERPER_QUERIES
+    balance = serper_balance()
+    print(f"Serper credits left: {balance if balance is not None else 'unknown'}", flush=True)
+    if balance is not None and balance < 300:   # stretch what is left
+        MAX_POST_QUERIES, WEB_MAX_QUERIES, YT_SERPER_QUERIES = min(MAX_POST_QUERIES, 10), min(WEB_MAX_QUERIES, 3), 2
+    if balance is not None and balance < 40:
+        do_posts = False
+        WEB_MAX_QUERIES = YT_SERPER_QUERIES = 0
 
     if do_posts and SERPER_KEY:
         posts, checked, stopped = run_posts(seen)
@@ -809,6 +902,8 @@ def main():
     src = "YouTube API" if YOUTUBE_KEY else "Serper search (add YOUTUBE_API_KEY for more and better email leads)"
     summary = (f"Roblox scout finished.\nPost leads: {len(posts)}\nNew email leads: {len(email_leads)} "
                f"(total saved: {total})\nEmail source: {src}")
+    if balance is not None:
+        summary += f"\nSerper credits left: {balance}" + ("  (LOW: top up at serper.dev)" if balance < 300 else "")
     if stopped:
         summary += f"\n\n{stopped}"
     print(summary, flush=True)

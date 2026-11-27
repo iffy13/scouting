@@ -6,8 +6,8 @@ name: Roblox scout
 # (this repository is public).
 on:
   schedule:
-    - cron: "41 7 * * *"    # about 08:41 Lagos time
-    - cron: "41 17 * * *"   # about 18:41 Lagos time
+    # Email leads every 4 hours. Hiring posts only twice a day (the 09:41 and 21:41 runs), they change slowly.
+    - cron: "41 1,5,9,13,17,21 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -58,7 +58,12 @@ jobs:
           restore-keys: roblox-scout-v2-
       - name: Run Roblox scout
         run: |
-          case "${{ inputs.only }}" in
+          only="${{ inputs.only }}"
+          if [ -z "$only" ]; then
+            h=$(date -u +%H)
+            case "$h" in 09|10|21|22) only=both ;; *) only=emails ;; esac
+          fi
+          case "$only" in
             posts)  python roblox_scout.py --posts ;;
             emails) python roblox_scout.py --emails ;;
             *)      python roblox_scout.py ;;

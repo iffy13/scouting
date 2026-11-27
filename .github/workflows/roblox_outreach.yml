@@ -1,13 +1,16 @@
 name: Roblox outreach
 
 # Emails the leads found by the Roblox scout, from one of your connected mailboxes: replies and bounces checked first,
-# then one follow up to people who did not answer after 4 days, then first emails up to the daily cap (15 by default),
-# 4 to 9 minutes apart. Everything that was sent and every reply goes to your Telegram.
+# then one follow up to people who did not answer after 4 days, then first emails up to the daily cap (50 by default, 10 per run),
+# 3 to 7 minutes apart. Everything that was sent and every reply goes to your Telegram.
 # Pause it: set the repository variable ROBLOX_OUTREACH_PAUSED to true.
 on:
-  schedule:
-    - cron: "13 14 * * 1-6"   # 09:13 New York, 14:13 London, 15:13 Lagos
-    - cron: "47 18 * * 1-6"   # 13:47 New York, 18:47 London, 19:47 Lagos
+  schedule:                   # 5 runs a day x 10 emails = 50 a day, spread over US and European working hours
+    - cron: "13 13 * * *"     # 08:13 New York, 13:13 London, 14:13 Lagos
+    - cron: "43 15 * * *"     # 10:43 New York, 15:43 London
+    - cron: "13 18 * * *"     # 13:13 New York, 18:13 London
+    - cron: "43 20 * * *"     # 15:43 New York, 20:43 London
+    - cron: "13 23 * * *"     # 18:13 New York, 15:13 Los Angeles
   workflow_dispatch:
     inputs:
       dry_run:
@@ -40,8 +43,8 @@ jobs:
       YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
       DB_PASSPHRASE: ${{ secrets.DB_PASSPHRASE }}
       ROBLOX_MAILBOX: ${{ vars.ROBLOX_MAILBOX }}
-      ROBLOX_DAILY_CAP: ${{ vars.ROBLOX_DAILY_CAP || '15' }}
-      ROBLOX_PER_RUN: ${{ vars.ROBLOX_PER_RUN || '8' }}
+      ROBLOX_DAILY_CAP: ${{ vars.ROBLOX_DAILY_CAP || '50' }}
+      ROBLOX_PER_RUN: ${{ vars.ROBLOX_PER_RUN || '10' }}
       ROBLOX_OUTREACH_PAUSED: ${{ vars.ROBLOX_OUTREACH_PAUSED || 'false' }}
       DRY_RUN: ${{ inputs.dry_run }}
     steps:
@@ -62,13 +65,14 @@ jobs:
           path: roblox_scout_state
           key: roblox-scout-v2-${{ github.run_id }}
           restore-keys: roblox-scout-v2-
-      - name: Find more email leads when fewer than 10 are waiting
+      - name: Find more email leads when fewer than 15 are waiting
         run: |
           n=$(python -c "import json;print(sum(1 for l in json.load(open('roblox_scout_state/email_leads.json')) if l.get('status','new')=='new'))" 2>/dev/null || echo 0)
           echo "Leads waiting: $n"
-          if [ "$n" -lt 10 ]; then python roblox_scout.py --emails; fi
+          if [ "$n" -lt 15 ]; then python roblox_scout.py --emails; fi
         env:
           TELEGRAM_BOT_TOKEN: ""   # no separate scout message here, the outreach report covers it
+          YT_MAX_QUERIES: "4"      # small top up only; the scout's own runs do the heavy searching
       - name: Send
         run: python roblox_outreach.py
       - name: Save the leads (also when something failed, so nobody is emailed twice)
