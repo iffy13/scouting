@@ -48,12 +48,15 @@ TG_CHAT = os.getenv("TELEGRAM_CHAT_ID", "")
 ANTHROPIC_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 MODEL = os.getenv("ROBLOX_SCOUT_MODEL", "claude-haiku-5-5")
 WINDOW = os.getenv("ROBLOX_SCOUT_WINDOW", "w")              # Serper time filter: d = day, w = week, m = month
-MAX_POST_QUERIES = int(os.getenv("ROBLOX_SCOUT_MAX_QUERIES", "30"))
+MAX_POST_QUERIES = int(os.getenv("ROBLOX_SCOUT_MAX_QUERIES", "24"))
 MAX_POST_ALERTS = int(os.getenv("ROBLOX_SCOUT_MAX_ALERTS", "10"))
 MIN_SCORE = int(os.getenv("ROBLOX_SCOUT_MIN_SCORE", "5"))
 YT_MIN_SUBS = int(os.getenv("YT_MIN_SUBS", "300"))
 YT_MAX_SUBS = int(os.getenv("YT_MAX_SUBS", "30000"))
-YT_MAX_QUERIES = int(os.getenv("YT_MAX_QUERIES", "10"))       # YouTube API: each search costs 100 of 10,000 daily units
+YT_MAX_QUERIES = int(os.getenv("YT_MAX_QUERIES", "5"))        # per game; each YouTube search costs 100 of 10,000 daily units
+YT_COMMENT_VIDEOS = int(os.getenv("YT_COMMENT_VIDEOS", "12"))  # big videos per game whose comments are read (1 unit each)
+YT_COMMENTS = os.getenv("YT_COMMENTS", "1").lower() not in ("0", "false", "no")
+NICHES = [n.strip() for n in os.getenv("SCOUT_NICHES", "roblox,minecraft").split(",") if n.strip()]
 YT_SERPER_QUERIES = int(os.getenv("YT_SERPER_QUERIES", "8"))  # fallback searches when there is no YouTube key
 YT_RECENT_DAYS = int(os.getenv("YT_RECENT_DAYS", "21"))
 STATE_DIR = os.getenv("ROBLOX_SCOUT_STATE", "roblox_scout_state")
@@ -98,10 +101,28 @@ POST_QUERIES = [
     ('site:itch.io roblox animator OR animation OR trailer "looking for" OR "help wanted"', "ANIM"),
     ('site:upwork.com/freelance-jobs roblox animation OR animator OR trailer OR "video editor"', "ANIM"),
     ('site:fiverr.com/requests OR site:freelancer.com/projects roblox animation OR animator OR trailer', "ANIM"),
+    # Minecraft: server owners, small teams and creators hiring
+    ('site:reddit.com/r/forhire "[hiring]" minecraft', "VIDEO"),
+    ('site:reddit.com/r/HungryArtists "[hiring]" minecraft', "THUMB"),
+    ('site:reddit.com/r/gameDevClassifieds "[paid]" OR "[hiring]" minecraft', "ANIM"),
+    ('site:builtbybit.com/threads "looking for" OR hiring trailer OR animator OR "video editor" OR thumbnail', "VIDEO"),
+    ('site:builtbybit.com minecraft request trailer OR animation OR cinematic', "VIDEO"),
+    ('site:spigotmc.org/threads hiring OR "looking for" trailer OR animator OR "video editor"', "VIDEO"),
+    ('site:planetminecraft.com/forums hiring OR "looking for" trailer OR animator OR editor', "VIDEO"),
+    ('site:reddit.com/r/admincraft "no players" OR "get players" OR "grow my server" OR "advertise my server"', "LAUNCH"),
+    ('site:reddit.com/r/admincraft trailer OR "promo video" OR "looking for" editor', "VIDEO"),
+    ('site:reddit.com/r/NewTubers minecraft editor OR thumbnail OR editing', "YTER"),
+    ('site:reddit.com/r/SmallYoutubers minecraft editor OR thumbnail OR "need help"', "YTER"),
+    ('site:x.com minecraft "looking for" animator OR "video editor" OR "thumbnail artist" OR trailer', "ANIM"),
+    ('site:x.com minecraft server "looking for" trailer OR "promo video" OR cinematic', "VIDEO"),
+    ('site:upwork.com/freelance-jobs OR site:fiverr.com/requests minecraft animation OR trailer OR "video editor"', "ANIM"),
 ]
 
 ROBLOX_HOSTS = ("devforum.roblox.com", "rohire.dev", "create.roblox.com", "talent.roblox.com")
 ROBLOX_SUBS = ("/r/robloxgamedev", "/r/roblox", "/r/robloxdevelopers")
+MC_HOSTS = ("spigotmc.org", "builtbybit.com", "mc-market.org", "planetminecraft.com", "minecraftforum.net",
+            "curseforge.com/minecraft", "modrinth.com")
+MC_SUBS = ("/r/admincraft", "/r/minecraft", "/r/minecraftbuddies", "/r/feedthebeast", "/r/minecraftserver")
 NEED = [(r"\banimat(or|ors|ion|ions|e)\b", 3), (r"\btrailer\b", 3), (r"\bcinematic", 2), (r"\bcutscene", 2),
         (r"\bthumbnails?\b", 2), (r"\bgame icon", 2), (r"\bvideo editor\b", 3), (r"\bediting\b", 1),
         (r"\beditor\b", 1), (r"\bshowcase video", 2), (r"\bpromo(tional)? video", 2), (r"\bemotes?\b", 2),
@@ -185,7 +206,7 @@ def age_text(date_text):
 
 def classify(text, hint):
     t = text.lower()
-    if re.search(r"no players|0 players|zero players|nobody plays|no one plays|get (more )?players|player count", t):
+    if re.search(NO_PLAYERS, t):
         return "LAUNCH"
     if re.search(r"youtube|channel|video editor|subscribers|\byt\b", t):
         return "YTER"
@@ -198,15 +219,26 @@ def classify(text, hint):
     return hint
 
 
-def is_roblox(item):
+def niche_of(item):
+    """'roblox', 'minecraft' or '' for a search result."""
     link = item.get("link", "").lower()
     text = f"{item.get('title', '')} {item.get('snippet', '')}".lower()
-    return "roblox" in text or any(h in link for h in ROBLOX_HOSTS) or any(s in link for s in ROBLOX_SUBS)
+    if "minecraft" in text or any(h in link for h in MC_HOSTS) or any(s in link for s in MC_SUBS):
+        return "minecraft"
+    if "roblox" in text or any(h in link for h in ROBLOX_HOSTS) or any(s in link for s in ROBLOX_SUBS):
+        return "roblox"
+    return ""
+
+
+def is_roblox(item):
+    return bool(niche_of(item))
 
 
 BOILERPLATE = re.compile(r"\s*[-|:]\s*(find and hire talent|collaboration|developer forum|roblox|reddit|itch\.io|"
+                         r"spigotmc|builtbybit|planet minecraft|minecraft forum|"
                          r"r/\w+|x|twitter|community|help wanted or offered)\b.*$", re.I)
-NO_PLAYERS = r"no players|0 players|zero players|nobody plays|no one plays|get (more )?players|no visits|0 visits|player count"
+NO_PLAYERS = (r"no players|0 players|zero players|nobody plays|no one plays|get (more )?players|no visits|0 visits|"
+              r"player count|grow (my|our) server|server is (dead|empty)|advertis(e|ing) (my|our) server")
 
 
 def clean_text(item):
@@ -226,7 +258,7 @@ def rule_score(item, hint):
     if not is_roblox(item) or is_seller(item):
         return 0, None
     need = min(6, sum(w for p, w in NEED if re.search(p, text, re.I)))
-    struggling = bool(re.search(NO_PLAYERS, text, re.I)) and bool(re.search(r"\bmy (first |new |own )?(roblox )?(game|experience)\b", text, re.I))
+    struggling = bool(re.search(NO_PLAYERS, text, re.I)) and bool(re.search(r"\b(my|our) (first |new |own )?(roblox |minecraft )?(game|experience|server|smp|network)\b", text, re.I))
     buyer = _hits(BUYER, text)
     if need == 0 or (buyer == 0 and not struggling):
         return 0, None
@@ -251,10 +283,24 @@ TEMPLATES = {
     "YTER": ("Hey, I edit Roblox videos and make thumbnails and animated intros for smaller channels. If you "
              "share your channel I can do one thumbnail or a short edit as a sample so you can see if it fits."),
 }
+TEMPLATES_MC = {
+    "ANIM": ("Hey, I make Minecraft animations in Blender (characters, mobs, cinematics) and can send a few samples "
+             "close to what you need. How long is the piece and do you have the rigs already?"),
+    "VIDEO": ("Hey, I make Minecraft server trailers and cinematics, the short kind that work on server lists, "
+              "TikTok and Shorts. If you send me the server IP or a few screenshots I can tell you what shots I would use "
+              "and send a couple of past examples."),
+    "THUMB": ("Hey, I do Minecraft thumbnails and server banners. Send me the video or server and I will tell you "
+              "what I would change to get more clicks."),
+    "LAUNCH": ("Most new servers get stuck there because the listing has no trailer and a weak banner, so people scroll "
+               "past. A 30 second trailer for the server lists, TikTok and Shorts usually helps more than paid ads at "
+               "the start. What kind of server is it? Happy to give honest feedback."),
+    "YTER": ("Hey, I edit Minecraft videos and make thumbnails and animated intros for smaller channels. If you share "
+             "your channel I can do one thumbnail or a short edit as a sample so you can see if it fits."),
+}
 LABEL = {"ANIM": "Needs animations", "VIDEO": "Needs a trailer or cinematic", "THUMB": "Needs thumbnails or icon",
-         "LAUNCH": "Game launched, no players yet", "YTER": "Roblox YouTuber needs editing"}
+         "LAUNCH": "Game or server launched, no players yet", "YTER": "YouTuber needs editing"}
 
-SYSTEM_PROMPT = """You help Samuel, a freelancer who sells Roblox animations, game trailers and cinematics,
+SYSTEM_PROMPT = """You help Samuel, a freelancer who sells Roblox and Minecraft animations, game and server trailers and cinematics,
 thumbnails and game icons, and video editing for Roblox YouTubers. You judge a public post found by search.
 Reply with JSON only, no other text, with these keys:
 fit: 0 to 10, how likely the poster would pay Samuel for this. The poster must be a BUYER. Score 0 for anyone
@@ -311,6 +357,23 @@ YT_TOPICS = [
     "my roblox game", "roblox game dev", "roblox scripting", "roblox building", "roblox ugc",
     "roblox outfit ideas", "roblox avatar", "roblox fashion", "roblox minigames", "roblox with friends",
 ]
+YT_TOPICS_MC = [
+    "minecraft smp", "minecraft hardcore", "minecraft survival", "minecraft lets play", "minecraft modded",
+    "minecraft but", "minecraft challenge", "minecraft manhunt", "minecraft animation", "minecraft story",
+    "minecraft build", "minecraft redstone", "minecraft server", "minecraft bedwars", "minecraft pvp",
+    "minecraft skyblock", "minecraft speedrun", "minecraft horror", "minecraft mods", "minecraft modpack",
+    "minecraft roleplay", "minecraft parkour", "minecraft funny moments", "minecraft update", "minecraft shorts",
+    "minecraft bedrock", "minecraft create mod", "minecraft 100 days", "minecraft cobblemon", "minecraft tutorial",
+    "minecraft devlog", "making a minecraft server", "minecraft plugin", "minecraft lifesteal", "minecraft trolling",
+]
+YT_TOPICS_BY = {"roblox": YT_TOPICS, "minecraft": YT_TOPICS_MC}
+# Popular recent videos whose comment sections are read for small creators (rotated)
+BIG_VIDEO_QUERIES = {
+    "roblox": ["roblox", "roblox brookhaven", "roblox funny", "roblox obby", "roblox horror", "roblox story",
+               "roblox update", "roblox new game", "roblox challenge", "roblox animation"],
+    "minecraft": ["minecraft", "minecraft smp", "minecraft hardcore", "minecraft manhunt", "minecraft mods",
+                  "minecraft animation", "minecraft challenge", "minecraft but", "minecraft update", "minecraft 100 days"],
+}
 YT_SERPER = [
     'site:youtube.com roblox "@gmail.com" "business"',
     'site:youtube.com roblox "business inquiries" "@gmail.com"',
@@ -366,10 +429,12 @@ def parse_subs(text):
     return int(n * mult)
 
 
-def angle_for(text):
+def angle_for(text, niche="roblox"):
     t = (text or "").lower()
-    if re.search(r"devlog|making a (roblox )?game|my game|studio|developer|\bdev\b", t):
-        return "Game dev: offer a trailer, animations or an icon for their game"
+    if niche == "minecraft" and re.search(r"\bserver\b|\bnetwork\b|\bip:|join (us|our)|play\.\w+\.\w+", t):
+        return "Server owner: offer a server trailer, banner or promo clips"
+    if re.search(r"devlog|making a (roblox |minecraft )?(game|mod|server)|my game|studio|developer|\bdev\b|modpack|\bmod\b", t):
+        return "Game or mod dev: offer a trailer, animations or a thumbnail"
     if re.search(r"animat|story|stories|cartoon|skit", t):
         return "Story/animation channel: offer animation help or faster turnaround"
     if re.search(r"shorts|tiktok", t):
@@ -384,13 +449,53 @@ def yt_get(path, params):
         return json.load(r)
 
 
-def youtube_api_leads(seen):
+def check_channels(cids, last_upload, niche, source, seen, need_word=False):
+    """Fetches channel details 50 at a time and keeps small creators with a business email."""
+    leads, checked = [], []
+    cids = [c for c in dict.fromkeys(cids) if f"yt:{c}" not in seen]
+    for i in range(0, len(cids), 50):
+        batch = cids[i:i + 50]
+        try:
+            data = yt_get("channels", {"part": "snippet,statistics", "id": ",".join(batch), "maxResults": 50})
+        except urllib.error.HTTPError as e:
+            print(f"YouTube channels failed (HTTP {e.code})")
+            break
+        for ch in data.get("items", []):
+            cid, sn, st = ch["id"], ch["snippet"], ch.get("statistics", {})
+            checked.append(f"yt:{cid}")
+            subs = int(st.get("subscriberCount", 0) or 0)
+            desc = sn.get("description", "")
+            words = (sn.get("title", "") + " " + desc).lower()
+            if not (YT_MIN_SUBS <= subs <= YT_MAX_SUBS) or int(st.get("videoCount", 0) or 0) < 5:
+                continue
+            if need_word and niche not in words:
+                continue  # commenters must actually make content about this game
+            if looks_like_child(desc) or sn.get("madeForKids") or is_seller_channel(sn.get("title", "") + " " + desc):
+                continue
+            emails = [e for e in find_emails(desc) if usable_email(e)]
+            if not emails:
+                continue
+            leads.append({
+                "source": source, "niche": niche, "channel": sn.get("title", ""), "channel_id": cid,
+                "url": f"https://www.youtube.com/channel/{cid}", "email": emails[0], "other_emails": emails[1:],
+                "subscribers": subs, "videos": int(st.get("videoCount", 0) or 0),
+                "country": sn.get("country", ""), "last_upload": (last_upload.get(cid, "") or "")[:10],
+                "angle": angle_for(sn.get("title", "") + " " + desc, niche), "key": f"yt:{cid}",
+            })
+    return leads, checked
+
+
+def _slot(n_items, per_run):
+    now_ = datetime.now(timezone.utc)
+    return ((now_.timetuple().tm_yday * 6 + now_.hour // 4) * per_run) % max(1, n_items)
+
+
+def youtube_api_leads(seen, niche="roblox"):
     after = (datetime.now(timezone.utc) - timedelta(days=YT_RECENT_DAYS)).strftime("%Y-%m-%dT%H:%M:%SZ")
     channels, last_upload = [], {}
-    topics = list(YT_TOPICS)
-    slot = (datetime.now(timezone.utc).timetuple().tm_yday * 6 + datetime.now(timezone.utc).hour // 4) * YT_MAX_QUERIES
-    slot %= len(topics)
-    topics = topics[slot:] + topics[:slot]  # each 4 hour run starts where the last one stopped
+    topics = list(YT_TOPICS_BY[niche])
+    k = _slot(len(topics), YT_MAX_QUERIES)
+    topics = topics[k:] + topics[:k]  # each 4 hour run starts where the last one stopped
     for q in topics[:YT_MAX_QUERIES]:
         try:
             data = yt_get("search", {"part": "snippet", "q": q, "type": "video", "order": "date",
@@ -402,46 +507,49 @@ def youtube_api_leads(seen):
             continue
         for it in data.get("items", []):
             cid = it["snippet"]["channelId"]
-            if f"yt:{cid}" in seen:
+            if f"yt:{cid}" in seen or cid in channels:
                 continue
-            if cid not in channels:
-                channels.append(cid)
+            channels.append(cid)
             last_upload.setdefault(cid, it["snippet"].get("publishedAt", ""))
-    print(f"YouTube: {len(channels)} new channels to check")
-    leads, checked = [], []
-    for i in range(0, len(channels), 50):
-        batch = channels[i:i + 50]
+    print(f"YouTube {niche}: {len(channels)} new channels to check")
+    return check_channels(channels, last_upload, niche, "youtube_api", seen)
+
+
+def youtube_comment_leads(seen, niche="roblox"):
+    """Reads the comment sections of popular recent videos and checks the commenters' own channels."""
+    queries = BIG_VIDEO_QUERIES[niche]
+    q = queries[_slot(len(queries), 1)]
+    after = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    try:
+        data = yt_get("search", {"part": "snippet", "q": q, "type": "video", "order": "viewCount",
+                                 "publishedAfter": after, "maxResults": YT_COMMENT_VIDEOS, "relevanceLanguage": "en"})
+    except urllib.error.HTTPError as e:
+        print(f"YouTube comment search failed (HTTP {e.code})")
+        return [], []
+    authors = []
+    for it in data.get("items", []):
+        vid, owner = it["id"].get("videoId"), it["snippet"]["channelId"]
+        if not vid:
+            continue
         try:
-            data = yt_get("channels", {"part": "snippet,statistics", "id": ",".join(batch), "maxResults": 50})
-        except urllib.error.HTTPError as e:
-            print(f"YouTube channels failed (HTTP {e.code})")
-            break
-        for ch in data.get("items", []):
-            cid, sn, st = ch["id"], ch["snippet"], ch.get("statistics", {})
-            checked.append(f"yt:{cid}")
-            subs = int(st.get("subscriberCount", 0) or 0)
-            desc = sn.get("description", "")
-            if not (YT_MIN_SUBS <= subs <= YT_MAX_SUBS) or int(st.get("videoCount", 0) or 0) < 5:
-                continue
-            if looks_like_child(desc) or sn.get("madeForKids") or is_seller_channel(sn.get("title", "") + " " + desc):
-                continue
-            emails = [e for e in find_emails(desc) if usable_email(e)]
-            if not emails:
-                continue
-            leads.append({
-                "source": "youtube_api", "channel": sn.get("title", ""), "channel_id": cid,
-                "url": f"https://www.youtube.com/channel/{cid}", "email": emails[0], "other_emails": emails[1:],
-                "subscribers": subs, "videos": int(st.get("videoCount", 0) or 0),
-                "country": sn.get("country", ""), "last_upload": last_upload.get(cid, "")[:10],
-                "angle": angle_for(sn.get("title", "") + " " + desc), "key": f"yt:{cid}",
-            })
-    return leads, checked
+            th = yt_get("commentThreads", {"part": "snippet", "videoId": vid, "maxResults": 100,
+                                           "order": "relevance", "textFormat": "plainText"})
+        except urllib.error.HTTPError:
+            continue  # comments turned off
+        for t in th.get("items", []):
+            a = t["snippet"]["topLevelComment"]["snippet"].get("authorChannelId", {}).get("value")
+            if a and a != owner and f"yt:{a}" not in seen:
+                authors.append(a)
+    authors = list(dict.fromkeys(authors))
+    print(f"YouTube {niche} comments ({q}): {len(authors)} commenters to check")
+    return check_channels(authors, {}, niche, "youtube_comments", seen, need_word=True)
 
 
-def youtube_serper_leads(seen):
+def youtube_serper_leads(seen, niche="roblox"):
     leads, checked = [], []
     day = datetime.now(timezone.utc).timetuple().tm_yday
-    queries = YT_SERPER[day % len(YT_SERPER):] + YT_SERPER[:day % len(YT_SERPER)]
+    base = [q.replace("roblox", niche) for q in YT_SERPER]
+    queries = base[day % len(base):] + base[:day % len(base)]
     for q in queries[:YT_SERPER_QUERIES]:
         try:
             results = serper(q, window="m")
@@ -459,17 +567,17 @@ def youtube_serper_leads(seen):
             key = f"yt:{handle.lower()}"
             text = f"{item.get('title', '')} {item.get('snippet', '')}"
             checked.append(key)
-            if key in seen or "roblox" not in text.lower() or looks_like_child(text) or is_seller_channel(text):
+            if key in seen or niche not in text.lower() or looks_like_child(text) or is_seller_channel(text):
                 continue
             emails = [e for e in find_emails(text) if usable_email(e)]
             subs = parse_subs(text)
             if not emails or (subs is not None and not (YT_MIN_SUBS <= subs <= YT_MAX_SUBS)):
                 continue
             leads.append({
-                "source": "youtube_search", "channel": re.sub(r"\s*-\s*YouTube\s*$", "", item.get("title", "")),
+                "source": "youtube_search", "niche": niche, "channel": re.sub(r"\s*-\s*YouTube\s*$", "", item.get("title", "")),
                 "channel_id": handle, "url": f"https://www.youtube.com/{handle}", "email": emails[0],
                 "other_emails": emails[1:], "subscribers": subs if subs is not None else "",
-                "videos": "", "country": "", "last_upload": "", "angle": angle_for(text), "key": key,
+                "videos": "", "country": "", "last_upload": "", "angle": angle_for(text, niche), "key": key,
             })
     return leads, checked
 
@@ -556,6 +664,27 @@ WEB_QUERIES = [
     ('"roblox" group owner "business" "@gmail.com"', "AGENCY"),
     ('"roblox" studio "hiring" "contact" -site:roblox.com -site:devforum.roblox.com', "AGENCY"),
 ]
+WEB_QUERIES_MC = [
+    ('"minecraft server" "contact us" store -site:minecraft.net -site:planetminecraft.com', "SERVER"),
+    ('"join our minecraft server" "contact"', "SERVER"),
+    ('"minecraft network" "contact us" -site:minecraft.net -site:minecraft.wiki', "SERVER"),
+    ('"minecraft smp" server website "contact" -site:reddit.com', "SERVER"),
+    ('"minecraft server" "business inquiries" OR "partnerships" email', "SERVER"),
+    ('"minecraft marketplace partner" studio contact', "STUDIO"),
+    ('"minecraft marketplace" creator studio "contact us" -site:minecraft.net', "STUDIO"),
+    ('"bedrock" marketplace studio maps skins "contact us"', "STUDIO"),
+    ('"minecraft" map OR adventure studio "contact us" -site:minecraft.net -site:planetminecraft.com', "STUDIO"),
+    ('"minecraft modpack" OR "minecraft mod" team "contact us" -site:curseforge.com -site:modrinth.com', "STUDIO"),
+    ('"minecraft coding" class OR camp OR academy "contact us"', "EDU"),
+    ('"minecraft education" camp OR club OR course "contact us"', "EDU"),
+    ('site:linktr.ee minecraft youtuber OR streamer business', "CREATOR"),
+    ('site:linktr.ee minecraft "@gmail.com"', "CREATOR"),
+    ('site:beacons.ai minecraft', "CREATOR"),
+    ('site:carrd.co minecraft server OR youtuber OR developer', "CREATOR"),
+    ('"minecraft" youtuber OR streamer "business inquiries" "@gmail.com" -editor -commissions', "CREATOR"),
+] + [(f'"minecraft server" {place} "contact" -site:minecraft.net', "SERVER")
+     for place in ["UK", "Canada", "Australia", "Germany", "Netherlands", "Poland", "Brazil", "Philippines",
+                   "Sweden", "Spain", "France", "USA"]]
 WEB_MAX_QUERIES = int(os.getenv("WEB_MAX_QUERIES", "8"))
 WEB_MAX_SITES = int(os.getenv("WEB_MAX_SITES", "40"))
 WEB_SKIP = ("roblox.com", "rbxcdn.com", "youtube.com", "youtu.be", "reddit.com", "fandom.com", "wikipedia.org",
@@ -563,7 +692,11 @@ WEB_SKIP = ("roblox.com", "rbxcdn.com", "youtube.com", "youtu.be", "reddit.com",
             "fiverr.com", "upwork.com", "freelancer.com", "amazon.", "apple.com", "google.", "microsoft.com",
             "ign.com", "polygon.com", "theverge.com", "forbes.com", "techcrunch.com", "businessinsider.com",
             "gamerant.com", "pcgamer.com", "dexerto.com", "sportskeeda.com", "screenrant.com", "kotaku.com",
-            "rolimons.com", "rbxrocks", "bloxfruits", "discord.com", "discord.gg", "github.com", "pinterest.",
+            "rolimons.com", "rbxrocks", "bloxfruits", "minecraft.net", "mojang.com", "minecraft.wiki",
+            "minecraft-server-list.com", "minecraftservers.org", "topg.org", "minecraft-mp.com", "servers-minecraft.net",
+            "planetminecraft.com", "namemc.com", "curseforge.com", "modrinth.com", "spigotmc.org", "builtbybit.com",
+            "minecraftforum.net", "tebex.io", "aternos", "apexminecrafthosting", "shockbyte", "bisecthosting",
+            "hypixel.net", "minehut", "pebblehost", "sparkedhost", "discord.com", "discord.gg", "github.com", "pinterest.",
             "quora.com", "steamcommunity.com", "twitch.tv", "playstation.com", "xbox.com", "nintendo.com",
             "glassdoor.", "indeed.", "crunchbase.com", "zoominfo.com", "trustpilot.com", "itch.io", "gamejolt")
 LINK_IN_BIO = ("linktr.ee", "beacons.ai", "carrd.co", "bio.link", "about.me", "lnk.bio", "solo.to")
@@ -574,6 +707,7 @@ WEB_ANGLE = {
     "UGC": "UGC brand: offer item thumbnails, promo videos or accessory showcase clips",
     "EDU": "Coding class or camp: offer promo videos or animated explainer clips",
     "CREATOR": "Creator: offer editing, thumbnails or an animated intro",
+    "SERVER": "Server owner: offer a server trailer, banner or promo clips for the listing and TikTok",
 }
 TAG_RE = re.compile(r"<script.*?</script>|<style.*?</style>|<[^>]+>", re.S | re.I)
 MAILTO_RE = re.compile(r'mailto:([^"\'?>\s]+)', re.I)
@@ -643,10 +777,14 @@ def usable_email(email, site_host=""):
 
 def web_leads(seen):
     leads, checked, sites = [], [], []
-    day = datetime.now(timezone.utc).timetuple().tm_yday
-    offset = ((day * 6 + datetime.now(timezone.utc).hour // 4) * WEB_MAX_QUERIES) % len(WEB_QUERIES)
-    queries = WEB_QUERIES[offset:] + WEB_QUERIES[:offset]
-    for q, kind in queries[:WEB_MAX_QUERIES]:
+    per = max(1, WEB_MAX_QUERIES // max(1, len(NICHES))) if WEB_MAX_QUERIES else 0
+    queries = []
+    for niche, pool in (("roblox", WEB_QUERIES), ("minecraft", WEB_QUERIES_MC)):
+        if niche not in NICHES:
+            continue
+        k = _slot(len(pool), per)
+        queries += [(q, kind, niche) for q, kind in (pool[k:] + pool[:k])[:per]]
+    for q, kind, niche in queries:
         try:
             results = serper(q, window="y")
         except Exception as e:
@@ -659,14 +797,14 @@ def web_leads(seen):
             host = host_of(link)
             bio = any(b in host for b in LINK_IN_BIO)
             key = "web:" + (norm_url(link) if bio else host)
-            if not host or key in seen or any(k == key for k, _, _ in sites) or any(sk in host for sk in WEB_SKIP):
+            if not host or key in seen or any(k == key for k, _, _, _ in sites) or any(sk in host for sk in WEB_SKIP):
                 continue
             if any(b in host for b in BIG_COMPANY) or (not bio and (ARTICLE.search(urllib.parse.urlsplit(link).path)
                                                                      or ARTICLE_TITLE.search(item.get("title", "")))):
                 continue
-            sites.append((key, item, kind))
+            sites.append((key, item, kind, niche))
     print(f"web: {len(sites)} new sites to open")
-    for key, item, kind in sites[:WEB_MAX_SITES]:
+    for key, item, kind, niche in sites[:WEB_MAX_SITES]:
         checked.append(key)
         link, host = item["link"], host_of(item["link"])
         bio = any(b in host for b in LINK_IN_BIO)
@@ -683,7 +821,7 @@ def web_leads(seen):
             if emails and not bio and url != link:
                 break
         whole = f"{item.get('title', '')} {item.get('snippet', '')} {text}"
-        if not emails or "roblox" not in whole.lower():
+        if not emails or niche not in whole.lower():
             continue
         if looks_like_child(whole) or is_seller_channel(f"{item.get('title', '')} {item.get('snippet', '')}"):
             continue
@@ -693,7 +831,7 @@ def web_leads(seen):
         if not email:
             continue
         name = re.split(r"\s+[|\-–—]\s+", item.get("title", ""))[0][:80] or host
-        leads.append({"source": f"web_{kind.lower()}", "channel": name, "channel_id": host, "url": link,
+        leads.append({"source": f"web_{kind.lower()}", "niche": niche, "channel": name, "channel_id": host, "url": link,
                       "email": email, "other_emails": [e for e in emails if e != email][:3], "subscribers": "",
                       "videos": "", "country": "", "last_upload": "", "angle": WEB_ANGLE[kind], "key": key})
     return leads, checked
@@ -759,22 +897,24 @@ def format_post(n, lead):
     when = age_text(lead.get("date", ""))
     extra = ", ".join(x for x in (f"by a {lead['who']}" if lead.get("who") else "",
                                   f"budget {lead['budget']}" if lead.get("budget") else "", when) if x)
-    return (f"Roblox lead {n}: {LABEL.get(lead['type'], lead['type'])}\n"
+    return (f"{(niche_of(lead) or 'roblox').title()} lead {n}: {LABEL.get(lead['type'], lead['type'])}\n"
             f"Fit {lead['fit']}/10 on {host_of(lead['link'])}" + (f", {extra}" if extra else "") + "\n\n"
             f"{lead.get('summary') or lead.get('title', '')}\n{lead['link']}\n\n"
             f"Draft reply:\n{lead['reply']}")
 
 
 def format_emails(leads, total):
-    lines = [f"Roblox email leads: {len(leads)} new (YouTube channels, studios, agencies, UGC brands, classes and "
-             f"creators, sellers filtered out). {total} saved in total."]
+    by = {n: sum(1 for l in leads if l.get("niche", "roblox") == n) for n in NICHES}
+    lines = [f"Email leads: {len(leads)} new (" + ", ".join(f"{v} {k.title()}" for k, v in by.items()) +
+             f"), sellers and kids filtered out. {total} saved in total."]
     for i, l in enumerate(leads, 1):
         if l["source"].startswith("web_"):
-            lines.append(f"\n{i}. {l['channel']} [{l['source'][4:]}]\n{l['email']}\n{l['url']}\n{l['angle']}")
+            lines.append(f"\n{i}. [{l.get('niche', 'roblox').title()}] {l['channel']} ({l['source'][4:]})\n{l['email']}\n{l['url']}\n{l['angle']}")
             continue
         subs = f"{l['subscribers']:,} subs" if isinstance(l["subscribers"], int) else "subs unknown"
         up = f", last upload {l['last_upload']}" if l.get("last_upload") else ""
-        lines.append(f"\n{i}. {l['channel']} ({subs}{up})\n{l['email']}\n{l['url']}\n{l['angle']}")
+        via = " via comments" if l["source"] == "youtube_comments" else ""
+        lines.append(f"\n{i}. [{l.get('niche', 'roblox').title()}] {l['channel']} ({subs}{up}{via})\n{l['email']}\n{l['url']}\n{l['angle']}")
     return "\n".join(lines)
 
 
@@ -786,6 +926,9 @@ def run_posts(seen):
             kind, q = line.split("|", 1)
             queries.append((q.strip(), kind.strip().upper()))
     found, titles, stopped = {}, set(), None
+    if len(queries) > MAX_POST_QUERIES:  # rotate: the two posts runs a day cover the whole list between them
+        half = (datetime.now(timezone.utc).timetuple().tm_yday * 2 + datetime.now(timezone.utc).hour // 12) % 2
+        queries = queries[half::2] + queries[1 - half::2]
     for q, hint in queries[:MAX_POST_QUERIES]:
         try:
             results = serper(q)
@@ -816,7 +959,8 @@ def run_posts(seen):
             lead = dict(item, type=kind, fit=judged["fit"], who=judged.get("who", ""), budget=judged.get("budget", ""),
                         summary=judged.get("summary", ""), reply=judged.get("reply") or TEMPLATES[kind])
         else:
-            lead = dict(item, fit=min(10, item["score"]), who="", budget="", summary="", reply=TEMPLATES[item["type"]])
+            tpl = TEMPLATES_MC if niche_of(item) == "minecraft" else TEMPLATES
+            lead = dict(item, fit=min(10, item["score"]), who="", budget="", summary="", reply=tpl[item["type"]])
         leads.append(lead)
         if len(leads) >= MAX_POST_ALERTS:
             break
@@ -825,13 +969,18 @@ def run_posts(seen):
 
 
 def run_emails(seen):
-    if YOUTUBE_KEY:
-        leads, checked = youtube_api_leads(seen)
-        if not leads and SERPER_KEY:
-            more, more_checked = youtube_serper_leads(seen)
-            leads, checked = leads + more, checked + more_checked
-    else:
-        leads, checked = youtube_serper_leads(seen)
+    leads, checked = [], []
+    for niche in NICHES:
+        got, chk = [], []
+        if YOUTUBE_KEY:
+            got, chk = youtube_api_leads(seen, niche)
+            if YT_COMMENTS:
+                more, more_chk = youtube_comment_leads(seen, niche)
+                got, chk = got + more, chk + more_chk
+        if not got and SERPER_KEY and YT_SERPER_QUERIES:
+            more, more_chk = youtube_serper_leads(seen, niche)
+            got, chk = got + more, chk + more_chk
+        leads, checked = leads + got, checked + chk
     if SERPER_KEY and "--no-web" not in ARGS:
         more, more_checked = web_leads(seen)
         leads, checked = leads + more, checked + more_checked
@@ -883,7 +1032,7 @@ def main():
     if do_posts and SERPER_KEY:
         posts, checked, stopped = run_posts(seen)
         if posts:
-            telegram(f"Roblox scout: {len(posts)} new BUYER{'S' if len(posts) != 1 else ''} (people hiring or needing help, "
+            telegram(f"Scout: {len(posts)} new BUYER{'S' if len(posts) != 1 else ''} (people hiring or needing help, "
                      "sellers filtered out), newest first. Reply on the post or DM them.")
             for i, lead in enumerate(posts, 1):
                 telegram(format_post(i, lead))
@@ -900,7 +1049,7 @@ def main():
             telegram(format_emails(email_leads, total))
 
     src = "YouTube API" if YOUTUBE_KEY else "Serper search (add YOUTUBE_API_KEY for more and better email leads)"
-    summary = (f"Roblox scout finished.\nPost leads: {len(posts)}\nNew email leads: {len(email_leads)} "
+    summary = (f"Scout finished ({' + '.join(n.title() for n in NICHES)}).\nPost leads: {len(posts)}\nNew email leads: {len(email_leads)} "
                f"(total saved: {total})\nEmail source: {src}")
     if balance is not None:
         summary += f"\nSerper credits left: {balance}" + ("  (LOW: top up at serper.dev)" if balance < 300 else "")
@@ -942,7 +1091,7 @@ def selftest():
              "https://devforum.roblox.com/t/for-hire/1"),
         item("[CLOSED] Hiring animator", "looking for an animator, paid robux", "https://devforum.roblox.com/t/c/2"),
         item("How to animate in Roblox Studio tutorial", "learn animation", "https://youtube.com/watch?v=1"),
-        item("Looking for an animator", "need an animator for my game paid", "https://reddit.com/r/Minecraft/x"),
+        item("Looking for an animator", "need an animator for my game paid", "https://reddit.com/r/Fortnite/x"),
     ]
     ok = True
     for it, want in good:
@@ -960,6 +1109,16 @@ def selftest():
     assert parse_subs("Roblox stuff. 12.4K subscribers. 230 videos") == 12400
     assert parse_subs("1,250 subscribers") == 1250
     assert is_seller_channel("Roblox thumbnail designer, DM for prices. Business: x@gmail.com")
+    assert niche_of({"title": "Looking for a trailer for my minecraft server", "link": "https://x.com/a"}) == "minecraft"
+    assert niche_of({"title": "Hiring", "link": "https://www.spigotmc.org/threads/x"}) == "minecraft"
+    s_, k_ = rule_score(item("[Hiring] Minecraft server trailer", "Need a 30 second trailer for our SMP, budget $80",
+                             "https://www.reddit.com/r/forhire/comments/mc/"), "VIDEO")
+    assert s_ >= MIN_SCORE and k_ == "VIDEO", (s_, k_)
+    s_, k_ = rule_score(item("My minecraft server has no players", "How do I grow my server? Launched last week",
+                             "https://www.reddit.com/r/admincraft/comments/q/"), "LAUNCH")
+    assert s_ >= MIN_SCORE and k_ == "LAUNCH", (s_, k_)
+    assert "Server owner" in angle_for("Our SMP server, join now", "minecraft")
+    assert "Server owner" not in angle_for("Minecraft SMP videos weekly", "minecraft")
     assert not usable_email("email us") and not usable_email("ads@invenglobal.com", "www.invenglobal.com")
     assert not usable_email("hi@marclou.com", "trustmrr.com") and usable_email("hello@bloxforge.com", "bloxforge.com")
     assert usable_email("tom.biz@gmail.com", "linktr.ee") and not usable_email("press@studio.com", "studio.com")
@@ -972,7 +1131,7 @@ def selftest():
     assert not is_seller_channel("I upload roblox obby videos every week! Business: x@gmail.com")
     ok &= rule_score(item("[Hiring] Roblox animator", "Need 10 combat animations, budget $100",
                           "https://www.reddit.com/r/forhire/comments/q/"), "ANIM")[0] >= MIN_SCORE
-    assert "Game dev" in angle_for("Roblox devlog: making a roblox game")
+    assert "Game or mod dev" in angle_for("Roblox devlog: making a roblox game")
     assert clean_reply("Hey - I can help—fast") == "Hey, I can help, fast"
     print("selftest", "passed" if ok else "FAILED")
     sys.exit(0 if ok else 1)

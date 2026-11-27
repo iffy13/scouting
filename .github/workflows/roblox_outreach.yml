@@ -72,7 +72,9 @@ jobs:
           if [ "$n" -lt 15 ]; then python roblox_scout.py --emails; fi
         env:
           TELEGRAM_BOT_TOKEN: ""   # no separate scout message here, the outreach report covers it
-          YT_MAX_QUERIES: "4"      # small top up only; the scout's own runs do the heavy searching
+          YT_MAX_QUERIES: "1"      # small top up only; the scout's own runs do the heavy searching
+          YT_COMMENTS: "0"
+          WEB_MAX_QUERIES: "2"
       - name: Send
         run: python roblox_outreach.py
       - name: Save the leads (also when something failed, so nobody is emailed twice)

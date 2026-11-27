@@ -1,5 +1,8 @@
 name: Roblox scout
 
+# Scouts Roblox AND Minecraft (SCOUT_NICHES): creators found by YouTube search and in the comment sections of big
+# videos, web leads (studios, servers, agencies, classes, link-in-bio pages) and hiring posts.
+
 # Finds small Roblox creators who need animation, trailers, thumbnails or video editing, and sends them to your
 # Telegram: hiring and "need help" posts (with a draft reply) and small YouTube channels with a business email.
 # Never contacts anyone. Email leads are kept in the Actions cache and an ENCRYPTED artifact, never in git

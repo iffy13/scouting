@@ -41,6 +41,7 @@ PER_RUN = int(os.getenv("ROBLOX_PER_RUN", "10") or 10)
 MIN_GAP = float(os.getenv("ROBLOX_MIN_GAP", "3") or 3)
 MAX_GAP = float(os.getenv("ROBLOX_MAX_GAP", "7") or 7)
 FOLLOWUP_DAYS = int(os.getenv("ROBLOX_FOLLOWUP_DAYS", "4") or 4)
+MC_SHARE = float(os.getenv("MINECRAFT_SHARE", "0.5") or 0.5)
 BOUNCE_LIMIT = float(os.getenv("ROBLOX_BOUNCE_LIMIT", "0.08") or 0.08)
 PAUSED = os.getenv("ROBLOX_OUTREACH_PAUSED", "").lower() in ("1", "true", "yes")
 TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
@@ -66,11 +67,16 @@ def clean_name(lead):
     return name
 
 
+def niche_of(lead):
+    return lead.get("niche") or "roblox"
+
+
 def kind_of(lead):
     src = lead.get("source", "")
     if src.startswith("youtube"):
         return "YT"
-    return {"web_studio": "STUDIO", "web_agency": "AGENCY", "web_ugc": "UGC", "web_edu": "EDU"}.get(src, "CREATOR")
+    return {"web_studio": "STUDIO", "web_agency": "AGENCY", "web_ugc": "UGC", "web_edu": "EDU",
+            "web_server": "SERVER"}.get(src, "CREATOR")
 
 
 # Each list is a pool. Every lead gets its own pick from each pool, so the emails differ in subject, opening,
@@ -87,6 +93,8 @@ SUBJECTS = {
            "question about your channel", "hey {name}"],
     "CREATOR": ["{name}", "quick question", "your roblox stuff", "question for {name}", "hey {name}"],
 }
+SUBJECTS["SERVER"] = ["{name}", "{name} trailer", "question about {name}", "trailer for {name}?", "quick question",
+                      "for the {name} team", "new players for {name}"]
 GREETINGS = {
     "STUDIO": ["Hi {name} team,", "Hey {name} team,", "Hi there,", "Hello {name} team,"],
     "AGENCY": ["Hi {name} team,", "Hi there,", "Hey {name} team,", "Hello,"],
@@ -95,6 +103,7 @@ GREETINGS = {
     "YT": ["Hey {name},", "Hi {name},", "Yo {name},", "Hey,"],
     "CREATOR": ["Hey {name},", "Hi {name},", "Hey,", "Hi there,"],
 }
+GREETINGS["SERVER"] = ["Hi {name} team,", "Hey {name} team,", "Hi there,", "Hey,"]
 CONTEXT = {
     "STUDIO": ["I came across {name} while looking for small studios building on Roblox.",
                "I found {name} while going through Roblox studios that are still growing.",
@@ -117,6 +126,9 @@ CONTEXT = {
                 "Found you while looking through Roblox creators online.",
                 "Your page came up while I was looking for Roblox creators to work with."],
 }
+CONTEXT["SERVER"] = ["I came across {name} while looking at Minecraft servers that are still growing.",
+                     "Found {name} while going through smaller Minecraft networks.",
+                     "Ran into {name} while looking at Minecraft servers this week."]
 WHO_I_AM = {
     "STUDIO": ["I make Roblox animations, mostly combat, idles, emotes and cutscenes, plus short game trailers.",
                "I animate for Roblox games (R6 and R15) and cut trailers for game pages and Shorts.",
@@ -137,6 +149,9 @@ WHO_I_AM = {
                 "I do Roblox animation, editing and thumbnails.",
                 "I make Roblox animations and edit videos."],
 }
+WHO_I_AM["SERVER"] = ["I make Minecraft server trailers and short promo clips, the kind that work on server lists, TikTok and Shorts.",
+                      "I do Minecraft cinematics and server trailers, plus thumbnails and banners for listings.",
+                      "I edit Minecraft trailers and make short animated promos for servers."]
 QUESTION = {
     "STUDIO": ["Are you doing animations in house right now, or is that something you'd hand off?",
                "Do you have a trailer for your current game yet, or is that still on the list?",
@@ -161,6 +176,10 @@ QUESTION = {
                 "What takes you the longest at the moment, editing or thumbnails?",
                 "Would it help to have someone handle the editing side?"],
 }
+QUESTION["SERVER"] = ["Do you have a trailer for the server yet, or is that still on the list?",
+                      "How are you getting new players at the moment?",
+                      "Who handles your trailers and promo videos right now?",
+                      "Would a short trailer help for your next season or update?"]
 SAMPLE = ["If it's useful I can send a couple of examples.", "Happy to send a few examples if you want to see my work.",
           "I can send some examples if that helps.", "Can share a few samples if you're curious.", ""]
 SIGNOFF = ["Thanks,", "Cheers,", "Best,", "Thanks for reading,", "All the best,", "Talk soon,", ""]
@@ -192,6 +211,21 @@ def _fill(text, name):
     return text.replace("{name}", name)
 
 
+MC_SWAPS = [("(R6 and R15)", "(Blender rigs)"), ("R6 and R15", "Blender"), ("Roblox UGC creators", "Minecraft creators"),
+            ("Roblox UGC shops", "Minecraft marketplace creators"), ("Roblox items", "Minecraft maps and packs"),
+            ("teams making Roblox games", "teams making Minecraft maps and servers"),
+            ("Roblox studios", "Minecraft studios"), ("Roblox", "Minecraft"), ("roblox", "minecraft"),
+            ("game pages", "server lists"), ("the game page", "the listing")]
+
+
+def for_niche(text, lead):
+    if niche_of(lead) != "minecraft":
+        return text
+    for a, b in MC_SWAPS:
+        text = text.replace(a, b)
+    return text
+
+
 def compose(lead):
     """(subject, body) for the first email. Same lead always gets the same email, different leads differ."""
     kind, name = kind_of(lead), clean_name(lead)
@@ -199,7 +233,8 @@ def compose(lead):
     subject = _fill(r.choice(SUBJECTS[kind]), name)
     if not name and subject in ("", "your team"):
         subject = "quick question"
-    subject = subject[0].lower() + subject[1:] if r.random() < 0.6 else subject[0].upper() + subject[1:]
+    if not (name and subject.startswith(name)):  # never change the case of a name
+        subject = subject[0].lower() + subject[1:] if r.random() < 0.6 else subject[0].upper() + subject[1:]
     question = r.choice(QUESTION[kind])
     lines = [_fill(r.choice(GREETINGS[kind]), name), ""]
     para = [_fill(r.choice(CONTEXT[kind]), name), r.choice(WHO_I_AM[kind])]
@@ -215,7 +250,7 @@ def compose(lead):
     lines += ["", r.choice(OPT_OUT)]
     if POSTAL_ADDRESS:
         lines.append(POSTAL_ADDRESS)
-    return subject, "\n".join(lines)
+    return for_niche(subject, lead), for_niche("\n".join(lines), lead)
 
 
 def compose_followup(lead):
@@ -227,7 +262,7 @@ def compose_followup(lead):
     text = body + "\n\n" + ((sign + "\n" + FIRST_NAME) if sign else FIRST_NAME)
     text += "\n\n" + r.choice(OPT_OUT) + (("\n" + POSTAL_ADDRESS) if POSTAL_ADDRESS else "")
     subj = lead.get("sent_subject") or "quick question"
-    return ("Re: " + subj) if not subj.lower().startswith("re:") else subj, text
+    return ("Re: " + subj) if not subj.lower().startswith("re:") else subj, for_niche(text, lead)
 
 
 SPAM_WORDS = re.compile(r"\b(free|guarantee[d]?|discount|offer|deal|limited time|act now|click|buy|cheap|"
@@ -242,7 +277,7 @@ def lint(subject, body):
         probs.append("spam word or link")
     if not 25 <= words <= 140:
         probs.append(f"{words} words")
-    if subject.isupper() or len(subject) > 60:
+    if (subject.isupper() and len(subject.split()) > 2) or len(subject) > 60:
         probs.append("subject")
     return probs
 
@@ -493,13 +528,31 @@ def run():
     emailed = {l["email"] for l in leads if l.get("status") not in (None, "new")}
     fresh = [l for l in leads if l.get("status", "new") == "new" and l["email"] not in emailed]
     fresh.sort(key=lambda l: (0 if l.get("source", "").startswith("youtube") else 1, l.get("found", "")))
-    for l in fresh:
-        if budget <= 0:
+    # Split the day between the games (MINECRAFT_SHARE, default half). When one game has no leads waiting,
+    # the other one uses the free places so the daily total is still reached.
+    today = now().date().isoformat()
+    share = {"minecraft": MC_SHARE, "roblox": 1 - MC_SHARE}
+    done = {n: sum(1 for l in leads if (l.get("sent_at") or "")[:10] == today and niche_of(l) == n) for n in share}
+    queue = {n: [l for l in fresh if niche_of(l) == n] for n in share}
+
+    def next_lead():
+        open_ = [n for n in share if queue[n]]
+        if not open_:
+            return None
+        under = [n for n in open_ if done[n] < round(DAILY_CAP * share[n])]
+        pick = min(under or open_, key=lambda n: done[n] / max(share[n], 0.01))
+        done[pick] += 1
+        return queue[pick].pop(0)
+
+    while budget > 0:
+        l = next_lead()
+        if l is None:
             break
         subject, body = compose(l)
         probs = lint(subject, body)
         if probs:
             print(f"skipped {mask(l['email'])}: {probs}")
+            l["status"] = "skipped"
             continue
         if first_sent:
             gap()
@@ -518,14 +571,16 @@ def run():
                 save_leads(leads)
 
     waiting = sum(1 for l in leads if l.get("status", "new") == "new")
-    lines = [f"Roblox outreach{' (dry run)' if DRY else ''} from {mailbox}:",
+    lines = [f"Outreach{' (dry run)' if DRY else ''} from {mailbox}:",
              f"First emails sent: {len(report['first'])}", f"Follow ups sent: {report['followups']}",
              f"New replies: {len(report['replied'])}", f"Bounced: {report['bounced']}",
-             f"Leads waiting: {waiting}"]
+             f"Leads waiting: {waiting} (" + ", ".join(
+                 f"{sum(1 for l in leads if l.get('status', 'new') == 'new' and niche_of(l) == n)} {n.title()}"
+                 for n in ("roblox", "minecraft")) + ")"]
     if report["failed"]:
         lines.append(f"Failed: {report['failed']}")
     for l in report["first"][:15]:
-        lines.append(f"- {l.get('channel') or ''} <{l['email']}>")
+        lines.append(f"- [{niche_of(l).title()}] {l.get('channel') or ''} <{l['email']}>")
     telegram("\n".join(lines))
 
 
@@ -536,6 +591,8 @@ def preview(n):
         {"email": "team@ugcland.example", "channel": "Home", "channel_id": "ugcland.example", "source": "web_ugc"},
         {"email": "hi@kidscode.example", "channel": "Code Camp Roblox Classes", "channel_id": "kidscode.example", "source": "web_edu"},
         {"email": "agency@brandverse.example", "channel": "Brandverse", "channel_id": "brandverse.example", "source": "web_agency"},
+        {"email": "owner@craftia.example", "channel": "Craftia Network", "channel_id": "craftia.example", "source": "web_server", "niche": "minecraft"},
+        {"email": "blocky.bob@gmail.com", "channel": "Blocky Bob", "channel_id": "UCy", "source": "youtube_comments", "niche": "minecraft"},
         {"email": "lia.makes@gmail.com", "channel": "Lia (@liamakes) | Linktree", "channel_id": "linktr.ee/liamakes", "source": "web_creator"},
     ]
     for l in leads[:n]:
@@ -560,6 +617,11 @@ def selftest():
         fs, fb = compose_followup(dict(l, sent_subject=s))
         assert fs.startswith("Re: ") and not lint(fs, fb), (fs, fb)
     assert len(bodies) > 150, len(bodies)
+    for src in ("web_server", "youtube_api", "web_studio", "web_edu", "web_creator"):
+        s_, b_ = compose({"email": f"x@{src}.com", "channel": "Craftia", "channel_id": "craftia.net", "source": src,
+                          "niche": "minecraft"})
+        assert "Roblox" not in s_ + b_ and "R6" not in b_ and not lint(s_, b_), (s_, b_)
+        assert "Minecraft" in b_, b_
     assert compose({"email": "a@b.com", "channel": "Home", "channel_id": "", "source": "web_studio"})[1].startswith("H")
     assert clean_name({"channel": "Lia (@liamakes) | Linktree"}) == "Lia"
     assert clean_name({"channel": "Contact Us", "channel_id": "www.bloxforge.com"}) == "Bloxforge"
