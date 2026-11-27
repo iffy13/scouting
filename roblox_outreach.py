@@ -531,7 +531,13 @@ def run():
     # 3. first emails to new leads
     emailed = {l["email"] for l in leads if l.get("status") not in (None, "new")}
     fresh = [l for l in leads if l.get("status", "new") == "new" and l["email"] not in emailed]
-    fresh.sort(key=lambda l: (0 if l.get("source", "").startswith("youtube") else 1, l.get("found", "")))
+    def tier(l):
+        """Smallest creators first: under 1,000 subs, then 1,000 to 5,000, then web leads, then 5,000 to 10,000."""
+        subs = l.get("subscribers")
+        if not isinstance(subs, int):
+            return 2
+        return 0 if subs < 1000 else (1 if subs < 5000 else 3)
+    fresh.sort(key=lambda l: (tier(l), l.get("found", "")))
     # Split the day between the games (MINECRAFT_SHARE, default half). When one game has no leads waiting,
     # the other one uses the free places so the daily total is still reached.
     today = now().date().isoformat()

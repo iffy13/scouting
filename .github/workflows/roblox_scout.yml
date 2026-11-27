@@ -45,7 +45,7 @@ jobs:
       ROBLOX_SCOUT_MAX_ALERTS: ${{ vars.ROBLOX_SCOUT_MAX_ALERTS || '10' }}
       ROBLOX_SCOUT_MAX_QUERIES: ${{ vars.ROBLOX_SCOUT_MAX_QUERIES || '30' }}
       ROBLOX_SCOUT_EXTRA: ${{ vars.ROBLOX_SCOUT_EXTRA }}
-      YT_MIN_SUBS: ${{ vars.YT_MIN_SUBS || '300' }}
+      YT_MIN_SUBS: ${{ vars.YT_MIN_SUBS || '1' }}
       YT_MAX_SUBS: ${{ vars.YT_MAX_SUBS || '10000' }}
       DRY_RUN: ${{ inputs.dry_run }}
     steps:

@@ -11,7 +11,7 @@ Two lead sources:
              Reddit (r/robloxgamedev, r/ROBLOXStudio, r/RobloxDevelopers, r/NewTubers), X, itch.io, RoHire,
              Roblox Talent Hub and Upwork. Each lead comes with a draft reply you post yourself.
 
-  2. EMAILS  Small Roblox YouTube channels (default 300 to 10,000 subscribers) that uploaded recently and put a
+  2. EMAILS  Small Roblox YouTube channels (default 1 to 10,000 subscribers, the smallest emailed first) that uploaded recently and put a
              business email in their channel description. With YOUTUBE_API_KEY it uses the YouTube Data API
              (exact subscriber counts and last upload). Without it, it searches YouTube pages through Serper.
              These are the leads for the email automation.
@@ -51,8 +51,9 @@ WINDOW = os.getenv("ROBLOX_SCOUT_WINDOW", "w")              # Serper time filter
 MAX_POST_QUERIES = int(os.getenv("ROBLOX_SCOUT_MAX_QUERIES", "24"))
 MAX_POST_ALERTS = int(os.getenv("ROBLOX_SCOUT_MAX_ALERTS", "10"))
 MIN_SCORE = int(os.getenv("ROBLOX_SCOUT_MIN_SCORE", "5"))
-YT_MIN_SUBS = int(os.getenv("YT_MIN_SUBS", "300"))
+YT_MIN_SUBS = int(os.getenv("YT_MIN_SUBS", "1"))
 YT_MAX_SUBS = int(os.getenv("YT_MAX_SUBS", "10000"))
+MIN_VIDEOS = int(os.getenv("YT_MIN_VIDEOS", "3"))
 YT_MAX_QUERIES = int(os.getenv("YT_MAX_QUERIES", "5"))        # per game; each YouTube search costs 100 of 10,000 daily units
 YT_COMMENT_VIDEOS = int(os.getenv("YT_COMMENT_VIDEOS", "12"))  # big videos per game whose comments are read (1 unit each)
 YT_COMMENTS = os.getenv("YT_COMMENTS", "1").lower() not in ("0", "false", "no")
@@ -466,7 +467,7 @@ def check_channels(cids, last_upload, niche, source, seen, need_word=False):
             subs = int(st.get("subscriberCount", 0) or 0)
             desc = sn.get("description", "")
             words = (sn.get("title", "") + " " + desc).lower()
-            if not (YT_MIN_SUBS <= subs <= YT_MAX_SUBS) or int(st.get("videoCount", 0) or 0) < 5:
+            if not (YT_MIN_SUBS <= subs <= YT_MAX_SUBS) or int(st.get("videoCount", 0) or 0) < MIN_VIDEOS:
                 continue
             if need_word and niche not in words:
                 continue  # commenters must actually make content about this game
