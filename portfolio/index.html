@@ -61,8 +61,8 @@ p { margin: 0; }
 .wall { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
 @media (max-width: 640px) { .wall { grid-template-columns: minmax(0, 1fr); } }
 .piece { margin: 0; display: grid; gap: 10px; min-width: 0; }
-.piece img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; display: block; cursor: zoom-in; transition: transform .2s ease; background: var(--panel); }
-.piece img:hover { transform: translateY(-3px); }
+.piece img, .piece video { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; display: block; cursor: zoom-in; transition: transform .2s ease; background: var(--panel); }
+.piece img:hover, .piece video:hover { transform: translateY(-3px); }
 .piece figcaption { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
 .piece .name { font-weight: 600; }
 .tag { font: 500 11.5px var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--stage); background: var(--gold); padding: 3px 8px; border-radius: 5px; white-space: nowrap; }
@@ -109,11 +109,10 @@ footer { color: var(--mute); font-size: 13px; padding-block: 28px 40px; border-t
 /* viewer */
 dialog { border: 0; padding: 0; background: transparent; max-width: min(1280px, 96vw); width: 100%; }
 dialog::backdrop { background: rgba(5,6,10,.9); }
-dialog img { width: 100%; border-radius: 10px; display: block; }
+dialog img, dialog video { width: 100%; border-radius: 10px; display: block; }
 dialog button { position: absolute; top: 10px; right: 10px; font: 700 14px var(--font-body); background: rgba(0,0,0,.7); color: #fff; border: 1px solid rgba(255,255,255,.3); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
-
 <div class="wrap">
   <header class="top">
     <div class="logo">IFFY <b>STUDIO</b></div>
@@ -128,16 +127,17 @@ dialog button { position: absolute; top: 10px; right: 10px; font: 700 14px var(-
       <div class="ctas"><a class="btn" href="#contact">Get your first one on me</a><a class="btn ghost" href="#work">See the work</a></div>
       <div class="facts"><span>48 hour delivery</span><span>2 revisions</span><span>1280 × 720, ready to upload</span></div>
     </div>
-    <figure class="hero-shot"><img src="img/roblox_vs_whos_faster.jpg" alt="Roblox VS thumbnail: two avatars on a split blue and red background, titled Who's faster" data-zoom></figure>
+    <figure class="hero-shot"><img id="heroImg" src="work/01-roblox-whos-faster.jpg" alt="Featured thumbnail" data-zoom></figure>
   </section>
 
   <section id="work" aria-labelledby="work-h">
     <div class="head">
-      <div><p class="eyebrow">Portfolio</p><h2 id="work-h">Recent thumbnails</h2></div>
+      <div><p class="eyebrow">Portfolio</p><h2 id="work-h">Thumbnails and animation</h2></div>
       <div class="filters" role="group" aria-label="Filter by game">
         <button class="chip" type="button" data-f="all" aria-pressed="true">All</button>
         <button class="chip" type="button" data-f="roblox" aria-pressed="false">Roblox</button>
         <button class="chip" type="button" data-f="minecraft" aria-pressed="false">Minecraft</button>
+        <button class="chip" type="button" data-f="video" aria-pressed="false">Animations</button>
       </div>
     </div>
     <div class="wall" id="wall"></div>
@@ -147,11 +147,7 @@ dialog button { position: absolute; top: 10px; right: 10px; font: 700 14px var(-
     <p class="eyebrow">Same video, new thumbnail</p>
     <h2 id="ba-h">Before and after</h2>
     <p class="lede" style="margin-top:12px">The left side is how most small channels do it: a wide shot and a sentence of small text. The right side is the same moment, redesigned to earn the click.</p>
-    <div class="ba" style="margin-top:26px">
-      <img src="img/roblox_dont_fall_before_after.jpg" alt="Before and after: a wide obby shot with small text, then a close shocked avatar over lava titled Don't fall" data-zoom loading="lazy">
-      <img src="img/minecraft_day_100_before_after.jpg" alt="Before and after: a dim survival landscape, then a hero under a blood moon with a monster behind, titled Day 100" data-zoom loading="lazy">
-      <img src="img/roblox_secret_base_before_after.jpg" alt="Before and after: a dark room shot, then a sly avatar beside a glowing green doorway titled Secret base" data-zoom loading="lazy">
-    </div>
+    <div class="ba" id="ba" style="margin-top:26px"></div>
   </section>
 
   <section aria-labelledby="rules-h">
@@ -198,34 +194,36 @@ dialog button { position: absolute; top: 10px; right: 10px; font: 700 14px var(-
   <footer>Iffy Studio · Thumbnails, Shorts edits and animation for Roblox and Minecraft creators. Not affiliated with Roblox Corporation or Mojang.</footer>
 </div>
 
-<dialog id="viewer"><img id="viewerImg" alt=""><button type="button" id="close">Close</button></dialog>
+<dialog id="viewer"><img id="viewerImg" alt=""><video id="viewerVid" muted loop playsinline controls hidden></video><button type="button" id="close">Close</button></dialog>
 
 <script>
 (() => {
-  const WORK = [
-    ["roblox_vs_whos_faster", "Who's faster?", "VS duel", "roblox"],
-    ["minecraft_hardcore_hearts", "Day 100, one heart left", "Game UI story", "minecraft"],
-    ["roblox_time_left", "Escape in 00:59", "Countdown", "roblox"],
-    ["minecraft_max_armor", "Max armor", "Showcase", "minecraft"],
-    ["roblox_dont_fall", "Don't fall", "Obby challenge", "roblox"],
-    ["minecraft_day_100", "Day 100", "Hardcore", "minecraft"],
-    ["roblox_secret_base", "Secret base?", "Story", "roblox"],
-    ["minecraft_server_new_season", "New season", "Server key art", "minecraft"],
-  ];
-  const wall = document.getElementById("wall");
-  WORK.forEach(([file, name, format, game]) => {
-    const f = document.createElement("figure"); f.className = "piece"; f.dataset.game = game;
-    f.innerHTML = `<img src="img/${file}.jpg" alt="${game === "roblox" ? "Roblox" : "Minecraft"} thumbnail: ${name}" loading="lazy" data-zoom><figcaption><span class="name">${name}</span><span class="tag ${game === "minecraft" ? "mc" : ""}">${format}</span></figcaption>`;
-    wall.appendChild(f);
-  });
+  const wall = document.getElementById("wall"), ba = document.getElementById("ba");
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  fetch("works.json", { cache: "no-store" }).then(r => r.json()).then(data => {
+    (data.work || []).forEach((w, i) => {
+      const f = document.createElement("figure"); f.className = "piece"; f.dataset.game = w.game;
+      const gameName = w.game === "minecraft" ? "Minecraft" : (w.game === "roblox" ? "Roblox" : "");
+      const media = w.video
+        ? `<video src="${esc(w.src)}" muted loop playsinline autoplay preload="metadata" aria-label="${esc((gameName ? gameName + " animation: " : "Animation: ") + w.title)}" data-zoom></video>`
+        : `<img src="${esc(w.src)}" alt="${esc((gameName ? gameName + " thumbnail: " : "Thumbnail: ") + w.title)}" loading="${i < 4 ? "eager" : "lazy"}" data-zoom>`;
+      f.innerHTML = media +
+        `<figcaption><span class="name">${esc(w.title)}</span>${w.format ? `<span class="tag ${w.game === "minecraft" ? "mc" : ""}">${esc(w.format)}</span>` : ""}</figcaption>`;
+      wall.appendChild(f);
+    });
+    if (data.work && data.work[0]) { const h = document.getElementById("heroImg"); h.src = data.work[0].src; h.alt = data.work[0].title; }
+    (data.beforeAfter || []).forEach(b => { const im = document.createElement("img"); im.src = b.src; im.alt = "Before and after: " + b.title; im.loading = "lazy"; im.dataset.zoom = ""; ba.appendChild(im); });
+  }).catch(() => { wall.innerHTML = '<p class="lede">The gallery could not load. Refresh the page to try again.</p>'; });
   document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
     document.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === c)));
-    document.querySelectorAll(".piece").forEach(p => { p.hidden = c.dataset.f !== "all" && p.dataset.game !== c.dataset.f; });
+    document.querySelectorAll(".piece").forEach(p => { const f = c.dataset.f; p.hidden = f !== "all" && (f === "video" ? !p.querySelector("video") : p.dataset.game !== f); });
   }));
   const dlg = document.getElementById("viewer"), vi = document.getElementById("viewerImg");
   document.addEventListener("click", e => {
-    const img = e.target.closest("img[data-zoom]"); if (!img) return;
-    vi.src = img.src; vi.alt = img.alt;
+    const img = e.target.closest("[data-zoom]"); if (!img) return;
+    const vv = document.getElementById("viewerVid");
+    if (img.tagName === "VIDEO") { vi.hidden = true; vv.hidden = false; vv.src = img.src; vv.play().catch(() => {}); }
+    else { vv.hidden = true; vv.pause(); vi.hidden = false; vi.src = img.src; vi.alt = img.alt; }
     if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
   });
   document.getElementById("close").addEventListener("click", () => dlg.close ? dlg.close() : dlg.removeAttribute("open"));
