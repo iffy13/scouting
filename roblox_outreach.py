@@ -556,6 +556,9 @@ def run():
         save_leads(leads)
     for l, text in report["replied"]:
         telegram(reply_alert(l, text, mailbox))
+        if l.get("latest_title"):
+            from thumb_brief import brief
+            telegram(brief(l["latest_title"], niche_of(l), l["email"]))
 
     # re-check saved leads with the current rules (older runs kept some article pages and invalid addresses)
     from roblox_scout import usable_email, ARTICLE, ARTICLE_TITLE, BIG_COMPANY, LINK_IN_BIO
@@ -754,6 +757,9 @@ def selftest():
                      "latest_title": "Brookhaven but I'm a Spy", "latest_video_id": "abc123", "niche": "roblox"},
                     "yes please!", "me@x.com")
     assert "i.ytimg.com/vi/abc123/maxresdefault.jpg" in a and "What you offered them" in a and FORGE_URL in a, a
+    from thumb_brief import brief
+    b = brief("I Survived 100 Days in Hardcore Minecraft!", "minecraft")
+    assert "Survival hero" in b and "No text" in b and "VS split" not in b, b
     print(f"selftest passed: {len(bodies)} different openings and {len(subjects)} subject shapes in 300 emails")
 
 
