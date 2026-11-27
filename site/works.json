@@ -57,6 +57,20 @@
    "video": false
   },
   {
+   "src": "work/09-minecraft-netherite-showcase.mp4",
+   "game": "minecraft",
+   "title": "Netherite showcase",
+   "format": "Animation",
+   "video": true
+  },
+  {
+   "src": "work/10-roblox-dance-loop.mp4",
+   "game": "roblox",
+   "title": "Dance loop",
+   "format": "Animation",
+   "video": true
+  },
+  {
    "src": "work/19-roblox-who-s-richer.jpg",
    "game": "roblox",
    "title": "Who's Richer?",
