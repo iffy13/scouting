@@ -811,6 +811,7 @@ def main():
                f"(total saved: {total})\nEmail source: {src}")
     if stopped:
         summary += f"\n\n{stopped}"
+    print(summary, flush=True)
     telegram(summary)
     if not DRY:
         save_json("seen.json", seen)
