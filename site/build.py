@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Builds site/works.json from the images in site/work and site/before-after.
 
-Add a piece: put an image in site/work (or site/before-after). Name it game-title-words.jpg, for example
+Add a piece: put an image (or an .mp4 animation) in site/work (or site/before-after). Name it game-title-words.jpg, for example
 roblox-tower-of-doom.jpg or minecraft-100-days-skyblock.png. Files are shown in name order, so start a name with
 a number (01-, 02-) to choose the order. For a nicer title or a format label, add the file to captions.json.
 """
@@ -10,7 +10,7 @@ import os
 import re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-IMG = re.compile(r"\.(jpe?g|png|webp|gif)$", re.I)
+IMG = re.compile(r"\.(jpe?g|png|webp|gif|mp4|webm)$", re.I)
 GAMES = ("roblox", "minecraft")
 
 
@@ -33,7 +33,8 @@ def items(folder, caps):
         game, title = auto(name)
         c = caps.get(name, {})
         out.append({"src": f"{folder}/{name}", "game": c.get("game", game), "title": c.get("title", title),
-                    "format": c.get("format", "")})
+                    "format": c.get("format", "Animation" if name.lower().endswith((".mp4", ".webm")) else ""),
+                    "video": name.lower().endswith((".mp4", ".webm"))})
     return out
 
 
