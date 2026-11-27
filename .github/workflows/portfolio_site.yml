@@ -1,8 +1,8 @@
 name: Portfolio site
 
-# Publishes the site/ folder to the gh-pages branch, which GitHub Pages serves at https://iffy13.github.io/scouting/
-# Add a thumbnail by uploading an image (or mp4) to site/work or site/before-after; this runs by itself and the
-# new piece is live a minute or two later.
+# Publishes site/ to GitHub Pages: https://iffy13.github.io/scouting/
+# Works with either Pages setting (Settings, Pages, Source): "GitHub Actions" uses the deploy job,
+# "Deploy from a branch" (gh-pages) uses the branch job. Add work by uploading to site/work or site/before-after.
 on:
   push:
     branches: [main]
@@ -11,6 +11,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: pages
@@ -19,20 +21,33 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: Build the gallery list
-        run: python site/build.py
-      - name: Push site/ to gh-pages
+        run: python site/build.py && touch site/.nojekyll
+      - name: Push site/ to the gh-pages branch (used when the source is a branch)
         run: |
-          cd site
-          touch .nojekyll
+          rm -rf /tmp/pub && cp -r site /tmp/pub && cd /tmp/pub
           git init -q -b gh-pages
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -qm "Publish portfolio site (${GITHUB_SHA::7})"
+          git add -A && git commit -qm "Publish portfolio site (${GITHUB_SHA::7})"
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages
+      - name: Deploy with Actions (used when the source is GitHub Actions)
+        id: configure
+        continue-on-error: true
+        uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.configure.outcome == 'success'
+        with:
+          path: site
+      - id: deployment
+        if: steps.configure.outcome == 'success'
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
